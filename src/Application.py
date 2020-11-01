@@ -4,34 +4,33 @@
 # Made with PyCharm
 
 # Standard Library
+from threading import Thread
 
 # Third party modules
 
 # Local application imports
 from Database import Database
 from Window import Window
-from CameraStream import CameraStream
-from Visao.ProductInfoExtractor import ProductInfoExtractor
+from Visao.VideoInfoExtractor import VideoInfoExtractor
 
 
 class Application:
     def __init__(self):
         self.database = Database()
-        self.vision_system = ProductInfoExtractor()
+        self.vision_system = ProductInfoExtractor(
+            application.window.product_added)
         self.window = Window(self.database, self.vision_system)
         self.application = QApplication(sys.argv)
 
     def run(self):
         self.window.show()
+        Thread(target=self.vision_system.run, args=()).start()
         sys.exit(self.application.exec_())   # Blocks
 
 
 def main():
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec_())
-
+    app = Application()
+    app.run()
 
 if __name__ == '__main__':
     main()

@@ -30,7 +30,9 @@ import imutils
 # Local modules
 from main_window import Ui_MainWindow
 from CameraStream import CameraStream
+from Database import Database
 from Helper import ProductInfo, ProducInfoQueue
+from Visao.VideoInfoExtractor import VideoInfoExtractor
 
 
 
@@ -39,7 +41,7 @@ class Window(QMainWindow):
 
     storage_updated = pyqtSignal()
 
-    def __init__(self, database, vision_system):
+    def __init__(self, database : Database, vision_system : VideoInfoExtractor):
         # Configuracoes principais da janela/Window
         super().__init__()
         self.ui = Ui_MainWindow()
@@ -187,7 +189,8 @@ class Window(QMainWindow):
         pass
 
     def show_frames(self):
-        self.grabbed, self.frame = self.camera.read()
+        self.grabbed, self.frame = self.vision_system.get_frame()
+        self.mask = self.vision_system.get_mask()
         bytes_per_line = 3 * width
 
         # Frame segmentado

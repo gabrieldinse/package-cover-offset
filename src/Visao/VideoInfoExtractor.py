@@ -4,29 +4,37 @@
 # Made with PyCharm
 
 # Standard Library
+from queue import Queue
 
 # Third party modules
+import cv2
 
 # Local application imports
 from Helper import WorkerQueue
 
 
-class ProductInfoExtractor:
-    def __init__(self, application, video_source=0,
+class VideoInfoExtractor:
+    def __init__(self, product_added_callback, video_source=0,
                  camera_resolution=(640, 480)):
         self.camera = cv2.VideoCapture(video_source)
         self.camera_resolution = camera_resolution
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, self.camera_resolution[0])
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, self.camera_resolution[1])
-        (self.grabbed, self.frame) = self.camera.read()
+        self.frames = Queue(maxsize=128)
+        self.put_frame()
 
-        self.products_info = WorkerQueue(application.window.product_added)
+        self.products_info = WorkerQueue(product_added_callback)
+        self.running = False
 
-    def read_frame(self):
-        return self.frame
+    def get_frame(self):
+        return self.frames.get()
 
-    def read_mask(self):
+    def get_mask(self):
         return self.segmentation_mask
+
+    def read_new_frame(self):
+        self.grabbed, self.frame = self.camera.read()
+        self.frames.put(self.frame)
 
     def get_diameters_and_centroids(self):
         """ Extrai da imagem os diametros e centroides da cada laranja. """
@@ -61,11 +69,6 @@ class ProductInfoExtractor:
                 self.contours.append(contour)
 
     def segment_frame(self):
-        """
-        Segmenta o frame baseado nos parametros HSV e de convolucao
-        configurados da gui.
-        """
-
         self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
 
         # Corta o frame de acordo com os parametros de maximo e minimo de
@@ -92,11 +95,6 @@ class ProductInfoExtractor:
                                                mask=self.segment_mask)
 
     def verify_frame(self):
-        """
-        Verifica a elegibilidade do frame e extrai as caracteristicas da
-        laranja.
-        """
-
         if self.identifier_running:
             if (time.time() - self.capture_timer) >= self.capture_timer_delay:
                 for diameter, centroid in zip(self.diameters, self.centroids):
@@ -138,9 +136,19 @@ class ProductInfoExtractor:
             self.capture_mask, self.capture_mask,
             mask=self.segment_mask)
 
-    def process_and_verify_frame(self):
-        self.grabbed, self.frame = self.camera.read()
-        if self.grabbed:
-            self.segment_frame()
-            self.get_diameters_and_centroids()
-            self.verify_frame()
+    def stop(self):
+        self.running = False
+
+    def run(self):
+        self.running = True
+
+        while True:
+            if not self.running:
+                return
+
+            self.read_new_frame()
+            if self.grabbed:
+                self.segment_frame()
+                self.get_diameters_and_centroids()
+                self.verify_frame()
+                self.products_info.put(self.last_product_info)
