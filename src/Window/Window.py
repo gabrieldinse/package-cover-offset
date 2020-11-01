@@ -29,45 +29,9 @@ import imutils
 
 # Local modules
 from main_window import Ui_MainWindow
-from conveyor_belt_controller import ConveyorController
-from oranges_data_storager import OrangesDataWriter
+from CameraStream import CameraStream
+from Helper import ProductInfo, ProducInfoQueue
 
-
-def circular_kernel(size):
-    """ Cria um uma janela circular para aplicacao de convolucao. """
-
-    kernel = np.ones((size, size), dtype=np.uint8)
-    center = floor(size / 2)
-    for i in range(size):
-        for j in range(size):
-            if hypot(i - center, j - center) > center:
-                kernel[i, j] = 0
-    return kernel
-
-class ProducInfoQueue:
-    def __init__(self, max_workers=0):
-        self.sentinel = object()
-        self.queue = Queue(maxsize=max_workers)
-
-    def add_product(self, product_info):
-        self.queue.put(product_info)
-
-    def finish_works(self):
-        self.queue.put(self.sentinel)
-
-    def run(self):
-        while True:
-            try:
-                # Bloqueia ate ter item na fila para dar 'get()'
-                item = self.queue.get()
-                if item is self.sentinel:
-                    return
-                work, args, kwargs = item
-                work(*args, **kwargs)
-            finally:
-                # Importante para o caso de multithreading para quando der
-                # join na fila
-                self.queue.task_done()
 
 
 class Window(QMainWindow):
@@ -75,7 +39,7 @@ class Window(QMainWindow):
 
     storage_updated = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, database, vision_system):
         # Configuracoes principais da janela/Window
         super().__init__()
         self.ui = Ui_MainWindow()
@@ -84,21 +48,8 @@ class Window(QMainWindow):
         # Sistema de visao funcionando ou nao
         self.identifier_running = False
 
-        #  Configuracoes de pastas e arquivos
-        self.gui_config_filename = 'gui_config.json'
-
-        # Camera
-        self.camera = cv2.VideoCapture(0)
-        self.camera_resolution = (640.0, 480.0)
-        self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.camera_resolution[0])
-        self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.camera_resolution[1])
-        self.capture_timer_delay = 3.0
-
-        # Variaveis do processo
-        self.conveyor = ConveyorController(debug=True)
-        self.data_writer = OrangesDataWriter(
-            os.path.dirname(os.path.abspath(__file__)), illuminant='D75')
-        self.diameter_prop = 1 / 2.275
+        self.database = database
+        self.vision_system = vision_system
 
         # Visualizacao dos frames no framework do Qt
         self.main_scene = QGraphicsScene()
@@ -160,10 +111,10 @@ class Window(QMainWindow):
         self.load_config()
 
         # Timer para capturar frames e processa-los
+        self.fps_max = 25
         self.frames_processor_timer = QTimer()
-        self.frames_processor_timer.timeout.connect(
-            self.process_and_verify_frame)
-        self.frames_processor_timer.start(0)
+        self.frames_processor_timer.timeout.connect(self.show_frames)
+        self.frames_processor_timer.start(1000 / self.fps_max)
 
     def load_config(self):
         """ Carrega as confiurações da gui no formato JSON. """
@@ -221,164 +172,22 @@ class Window(QMainWindow):
             self.ui.capture_line_position_slider.setValue(
                 self.capture_line_position)
 
-    def save_config(self):
-        """ Salva as configuracoes da gui no formato JSON. """
+    # Reinplementacao do metodo closeEvent
+    def closeEvent(self, event):
+        """ Antes de encerrar o programa, salva os arquivos. """
 
-        with open(self.gui_config_filename, 'w') as config_file:
-            # Carrega as informacoes para o arquivo json na forma de um dict()
-            config = {
-                'color_range':
-                {
-                    'min_h': self.min_h,
-                    'max_h': self.max_h,
-                    'min_s': self.min_s,
-                    'max_s': self.max_s,
-                    'min_v': self.min_v,
-                    'max_v': self.max_v
-                },
-                'kernel_size':
-                {
-                    'gaussian': self.gaussian_kernel_size,
-                    'opening': self.opening_kernel_size
-                },
-                'frame_dimension_range':
-                {
-                    'min_width': self.min_frame_width,
-                    'max_width': self.max_frame_width,
-                    'min_height': self.min_frame_height,
-                    'max_height': self.max_frame_height
-                },
-                'capture_line':
-                {
-                    'position': self.capture_line_position,
-                    'left_width': self.capture_box_left_width,
-                    'right_width': self.capture_box_right_width
-                }
-            }
-            json.dump(config, config_file)
+        self.save_config()
+        self.data_writer.stop()
+        self.conveyor.stop()
+        self.camera.release()
+        event.accept()
 
-    def get_diameters_and_centroids(self):
-        """ Extrai da imagem os diametros e centroides da cada laranja. """
+    # Callbacks
+    def product_added(self, product_info):
+        pass
 
-        contours = cv2.findContours(self.segment_mask.copy(),
-                                    cv2.RETR_EXTERNAL,
-                                    cv2.CHAIN_APPROX_SIMPLE)
-        contours = imutils.grab_contours(contours)
-        self.diameters = []
-        self.centroids = []
-        self.contours = []
-        for contour in contours:
-            # Obtem os momentos do contorno:
-            # m00 = area em pixels
-            # m10 = momento de ordem 1 em x
-            # m01 = momento de ordem 1 em y
-            # m10/m00 = posicao x do centroide
-            # m01/m00 = posicao y do centroide
-            mom = cv2.moments(contour)
-
-            # Filtra os contornos obtidos por metrica circular e area
-            if (4 * pi * mom['m00'] / cv2.arcLength(contour,
-                                                    True) ** 2 > 0.8 and
-                    mom['m00'] > 300):
-                # Se o objeto eh aproximadamente circular, o diametro pode ser
-                # estimado pela formula abaixo
-                diameter = 2 * sqrt(mom['m00'] / pi)
-                # Eh de interesse apenas a posicao do centroide em x
-                centroid = (int(mom['m10'] / mom['m00']),
-                            int(mom['m01'] / mom['m00']))
-                self.diameters.append(diameter)
-                self.centroids.append(centroid)
-                self.contours.append(contour)
-
-    def draw_contours_and_centroids(self):
-        """ Desenha os centroides e o contorno obtido para cada laranja. """
-
-        for contour, center in zip(self.contours, self.centroids):
-            cv2.drawContours(self.processed_frame, [contour],
-                             0, (0, 255, 0), 3)
-            cv2.circle(self.processed_frame, center, 10, (255, 0, 0), -1)
-            if self.identifier_running:
-                cv2.drawContours(self.frame, [contour],
-                                 0, (0, 255, 0), 3)
-                cv2.circle(self.frame, center, 10, (255, 0, 0), -1)
-
-    def draw_capture_lines(self):
-        """ Desenha as linhas da caixa da captura no frame de segmentacao. """
-
-        # Frame de segmentacao
-        # Linha vertical central (linha de captura)
-        cv2.line(self.processed_frame,
-                 (self.capture_line_position, self.min_frame_height),
-                 (self.capture_line_position, self.max_frame_height),
-                 (0, 255, 0), 2)
-
-        # Linha da esquerda
-        cv2.line(self.processed_frame,
-                 (self.capture_box_left_position, self.min_frame_height),
-                 (self.capture_box_left_position, self.max_frame_height),
-                 (0, 0, 255), 2)
-
-        # Linha da direita
-        cv2.line(self.processed_frame,
-                 (self.capture_box_right_position, self.min_frame_height),
-                 (self.capture_box_right_position, self.max_frame_height),
-                 (0, 0, 255), 2)
-
-        # Linha superior
-        cv2.line(self.processed_frame,
-                 (self.capture_box_left_position, self.max_frame_height),
-                 (self.capture_box_right_position, self.max_frame_height),
-                 (0, 0, 255), 2)
-
-        # Linhas inferior
-        cv2.line(self.processed_frame,
-                 (self.capture_box_left_position, self.min_frame_height),
-                 (self.capture_box_right_position, self.min_frame_height),
-                 (0, 0, 255), 2)
-
-    def segment_frame(self):
-        """
-        Segmenta o frame baseado nos parametros HSV e de convolucao
-        configurados da gui.
-        """
-
-        self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-
-        # Corta o frame de acordo com os parametros de maximo e minimo de
-        # largura e altura
-        cropped_frame = np.zeros(self.frame.shape, dtype=np.uint8)
-        cropped_frame[self.min_frame_height:self.max_frame_height,
-        self.min_frame_width:self.max_frame_width] = \
-            self.frame[self.min_frame_height:self.max_frame_height,
-            self.min_frame_width:self.max_frame_width]
-        self.frame = cropped_frame
-
-        # Filtro gaussiano para suavizar ruidos na imagem
-        blur = cv2.GaussianBlur(cropped_frame, (self.gaussian_kernel_size,
-                                                self.gaussian_kernel_size), 0)
-        hsv = cv2.cvtColor(blur, cv2.COLOR_RGB2HSV)
-
-        # Segmentacao de acordo com o invervalo de cores HSV
-        in_range_mask = cv2.inRange(
-            hsv, (self.min_h, self.min_s, self.min_v),
-            (self.max_h, self.max_s, self.max_v))
-        self.segment_mask = cv2.morphologyEx(in_range_mask, cv2.MORPH_OPEN,
-                                             self.opening_kernel)
-        self.processed_frame = cv2.bitwise_and(cropped_frame, cropped_frame,
-                                               mask=self.segment_mask)
-
-    # Transforma o frame do formato do opencv (numpy.ndarray) para QImage e
-    # mostra na gui
     def show_frames(self):
-        """
-        Converte os frames no formato Opencv para serem mostrados na
-        interface do Qt
-        """
-
-        self.draw_contours_and_centroids()
-        self.draw_capture_lines()
-
-        height, width, _ = self.frame.shape
+        self.grabbed, self.frame = self.camera.read()
         bytes_per_line = 3 * width
 
         # Frame segmentado
@@ -392,78 +201,6 @@ class Window(QMainWindow):
                            bytes_per_line, QImage.Format_RGB888)
         gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
         self.main_pixmap.setPixmap(QPixmap.fromImage(gui_frame))
-
-    def verify_frame(self):
-        """
-        Verifica a elegibilidade do frame e extrai as caracteristicas da
-        laranja.
-        """
-
-        if self.identifier_running:
-            if (time.time() - self.capture_timer) >= self.capture_timer_delay:
-                for diameter, centroid in zip(self.diameters, self.centroids):
-                    if (self.capture_line_position <= centroid[0]
-                            <= self.capture_box_right_position):
-                        self.create_capture_mask()
-
-                        # cv2.mean retorna np.ndarray([R, G, B, alpha]), onde
-                        # alpha eh a transparencia, nao utilizada neste caso
-                        rgb_mean = np.array(cv2.mean(
-                            self.processed_frame, mask=self.capture_mask)[0:3],
-                                            dtype=np.uint8)
-                        self.data_writer.add(
-                            diameter * self.diameter_prop, rgb_mean)
-                        self.storage_updated.emit()
-                        self.capture_timer = time.time()
-                        return
-
-    def create_capture_mask(self):
-        """ Cria uma mascara de captura baseada nos parametros de captura. """
-
-        self.capture_mask = np.zeros(
-            (int(self.camera.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-             int(self.camera.get(cv2.CAP_PROP_FRAME_WIDTH))),
-            dtype=np.uint8)
-
-        self.capture_mask[
-        self.min_frame_height:
-        self.max_frame_height + 1,
-        self.capture_box_left_position:
-        self.capture_box_right_position + 1
-        ] = np.ones((
-            self.max_frame_height - self.min_frame_height + 1,
-            self.capture_box_left_width + 1 +
-            self.capture_box_right_width),
-            dtype=np.uint8)
-
-        self.capture_mask = cv2.bitwise_and(
-            self.capture_mask, self.capture_mask,
-            mask=self.segment_mask)
-
-    # Reinplementacao do metodo closeEvent
-    def closeEvent(self, event):
-        """ Antes de encerrar o programa, salva os arquivos. """
-
-        self.save_config()
-        self.data_writer.stop()
-        self.conveyor.stop()
-        self.camera.release()
-        event.accept()
-
-    # Slots
-    def process_and_verify_frame(self):
-        """
-        Slot principal. Processa o frame e extrai as caracteristicas
-        da laranja.
-        """
-
-        self.grabbed, self.frame = True, cv2.imread(
-            "imagem.JPEG")  # self.camera.read()
-        if self.grabbed:
-            self.segment_frame()
-            self.get_diameters_and_centroids()
-            self.verify_frame()
-            self.show_frames()
 
     def min_h_slider_value_changed(self):
         self.min_h = self.ui.min_h_slider.value()

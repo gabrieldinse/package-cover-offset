@@ -10,18 +10,20 @@
 # Local application imports
 from Database import Database
 from Window import Window
+from CameraStream import CameraStream
+from Visao.ProductInfoExtractor import ProductInfoExtractor
 
 
 class Application:
     def __init__(self):
         self.database = Database()
-        self.window = Window(self.database)
+        self.vision_system = ProductInfoExtractor()
+        self.window = Window(self.database, self.vision_system)
+        self.application = QApplication(sys.argv)
 
     def run(self):
-        self.application = QApplication(sys.argv)
-        self.window = MainWindow()
         self.window.show()
-        sys.exit(application.exec_())
+        sys.exit(self.application.exec_())   # Blocks
 
 
 def main():

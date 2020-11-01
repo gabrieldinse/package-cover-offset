@@ -17,14 +17,14 @@ class ProductInfo:
         self.offset = offset
         self.has_cover = has_cover
 
-class ProducInfoQueue:
-    def __init__(self, application, max_workers=0):
+class WorkerQueue:
+    def __init__(self, callback, max_workers=0):
         self.sentinel = object()
-        self.applcation = application
+        self.callback = callback
         self.queue = Queue(maxsize=max_workers)
 
-    def add_product(self, product_info):
-        self.queue.put(product_info)
+    def put(self, *args, **kwargs):
+        self.queue.put((args, kwargs))
 
     def finish_works(self):
         self.queue.put(self.sentinel)
@@ -32,12 +32,23 @@ class ProducInfoQueue:
     def run(self):
         while True:
             try:
-                # Bloqueia ate ter item na fila para dar 'get()'
                 item = self.queue.get()
                 if item is self.sentinel:
                     return
-                self.application.new_product_callback(item)
+                args, kwargs = item
+                self.callback(*args, **kwargs)
             finally:
                 # Importante para o caso de multithreading para quando der
                 # join na fila
                 self.queue.task_done()
+
+def circular_kernel(size):
+    """ Cria um uma janela circular para aplicacao de convolucao. """
+
+    kernel = np.ones((size, size), dtype=np.uint8)
+    center = floor(size / 2)
+    for i in range(size):
+        for j in range(size):
+            if hypot(i - center, j - center) > center:
+                kernel[i, j] = 0
+    return kernel
