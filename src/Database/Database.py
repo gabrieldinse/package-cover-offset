@@ -11,8 +11,8 @@ import random
 # Third party modules
 import mysql.connector as mariadb
 
-
 # Local application imports
+from Helper import ProductInfo
 
 
 class Database:
@@ -63,13 +63,15 @@ class Database:
         ''')
         return self.cursor.__iter__()
 
-    def add_product(self, datetime_produced, offset, has_cover):
+    def add_product(self, product_info : ProductInfo):
         if self.production_started:
             self.cursor.execute(f'''
                 INSERT INTO produto
                     (Offset, TemTampa, ProduzidoEm)
                 VALUES
-                    ({offset}, {int(has_cover)}, "{datetime_produced}")
+                    ({product_info.offset},
+                     {int(product_info.has_cover)},
+                     "{product_info.datetime_produced}")
             ''')
             self.last_product_id = self.cursor.lastrowid
 

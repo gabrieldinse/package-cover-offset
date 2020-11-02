@@ -5,38 +5,28 @@
 
 # Standard Library
 from queue import Queue
+from threading import Thread
 
 # Third party modules
 import cv2
 
 # Local application imports
-from Helper import WorkerQueue
+from Helper import WorkerQueue, VideoInfoEvents
 
 
 class VideoInfoExtractor:
-    def __init__(self, product_added_callback, video_source=0,
+    def __init__(self, application, video_source=0,
                  camera_resolution=(640, 480)):
+        self.sentinel = object()
+        self.events = VideoInfoEvents()
         self.camera = cv2.VideoCapture(video_source)
         self.camera_resolution = camera_resolution
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, self.camera_resolution[0])
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, self.camera_resolution[1])
-        self.frames = Queue(maxsize=128)
-        self.put_frame()
 
-        self.products_info = WorkerQueue(product_added_callback)
         self.running = False
 
-    def get_frame(self):
-        return self.frames.get()
-
-    def get_mask(self):
-        return self.segmentation_mask
-
-    def read_new_frame(self):
-        self.grabbed, self.frame = self.camera.read()
-        self.frames.put(self.frame)
-
-    def get_diameters_and_centroids(self):
+    def get_centroids(self):
         """ Extrai da imagem os diametros e centroides da cada laranja. """
 
         contours = cv2.findContours(self.segment_mask.copy(),
@@ -138,6 +128,8 @@ class VideoInfoExtractor:
 
     def stop(self):
         self.running = False
+        self.products.put(self.sentinel)
+        self.frames.put(self.sentinel)
 
     def run(self):
         self.running = True
@@ -146,9 +138,10 @@ class VideoInfoExtractor:
             if not self.running:
                 return
 
-            self.read_new_frame()
+            self.grabbed, self.frame = self.camera.read()
             if self.grabbed:
                 self.segment_frame()
-                self.get_diameters_and_centroids()
+                self.events.emit('new_frame', self.frame, self.mask)
+                self.get_centroids()
                 self.verify_frame()
-                self.products_info.put(self.last_product_info)
+                self.events.emit('new_product', self.last_product_info)

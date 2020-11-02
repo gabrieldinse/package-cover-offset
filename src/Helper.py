@@ -7,6 +7,7 @@
 import datetime
 
 # Third party modules
+import pydispatch
 
 # Local application imports
 
@@ -52,3 +53,7 @@ def circular_kernel(size):
             if hypot(i - center, j - center) > center:
                 kernel[i, j] = 0
     return kernel
+
+
+class VideoInfoEvents(pydispatch.Dispatcher):
+    _events_ =  ['new_product', 'new_frame']
