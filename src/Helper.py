@@ -5,6 +5,7 @@
 
 # Standard Library
 import datetime
+from queue import Queue
 
 # Third party modules
 import pydispatch
@@ -17,6 +18,7 @@ class ProductInfo:
         self.datetime_produced = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.offset = offset
         self.has_cover = has_cover
+
 
 class WorkerQueue:
     def __init__(self, callback, max_workers=0):
@@ -43,6 +45,11 @@ class WorkerQueue:
                 # join na fila
                 self.queue.task_done()
 
+
+class VideoInfoEvents(pydispatch.Dispatcher):
+    _events_ =  ['new_product', 'new_frame']
+
+
 def circular_kernel(size):
     """ Cria um uma janela circular para aplicacao de convolucao. """
 
@@ -53,7 +60,3 @@ def circular_kernel(size):
             if hypot(i - center, j - center) > center:
                 kernel[i, j] = 0
     return kernel
-
-
-class VideoInfoEvents(pydispatch.Dispatcher):
-    _events_ =  ['new_product', 'new_frame']

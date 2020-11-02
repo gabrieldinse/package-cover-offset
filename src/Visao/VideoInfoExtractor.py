@@ -21,8 +21,8 @@ class VideoInfoExtractor:
         self.events = VideoInfoEvents()
         self.camera = cv2.VideoCapture(video_source)
         self.camera_resolution = camera_resolution
-        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, self.camera_resolution[0])
-        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, self.camera_resolution[1])
+        self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.camera_resolution[0])
+        self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.camera_resolution[1])
 
         self.running = False
 
@@ -138,10 +138,10 @@ class VideoInfoExtractor:
             if not self.running:
                 return
 
-            self.grabbed, self.frame = self.camera.read()
-            if self.grabbed:
-                self.segment_frame()
-                self.events.emit('new_frame', self.frame, self.mask)
-                self.get_centroids()
-                self.verify_frame()
-                self.events.emit('new_product', self.last_product_info)
+            # self.grabbed, self.frame = self.camera.read()
+            # if self.grabbed:
+            #     self.segment_frame()
+            #     self.events.emit('new_frame', self.frame, self.mask)
+            #     self.get_centroids()
+            #     self.verify_frame()
+            #     self.events.emit('new_product', self.last_product_info)
