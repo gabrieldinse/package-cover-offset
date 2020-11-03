@@ -1,5 +1,5 @@
 # Author: Gabriel Dinse
-# File: Application
+# File: ApplicationWindows
 # Date: 11/1/2020
 # Made with PyCharm
 
@@ -8,14 +8,12 @@ import sys
 from threading import Thread
 
 # Third party modules
-from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
-                             QMainWindow, QApplication)
+from PyQt5.QtWidgets import (QApplication)
 
 
 # Local application imports
 from Database.Database import Database
-from MainWindow import MainWindow
-from SettingsDialog import SettingsDialog
+from ApplicationWindows.MainWindow import MainWindow
 from Visao.VideoInfoExtractor import VideoInfoExtractor
 from Helper import WorkerQueue
 
@@ -38,10 +36,13 @@ class Application(QApplication):
         self.running = True
         Thread(target=self.frames_shower.run, args=()).start()
         Thread(target=self.products_adder.run, args=()).start()
-        Thread(target=self.vision_system.run, args=()).start()
 
         self.window.show()
         sys.exit(self.exec_())   # Blocks
+
+    def finish_works(self):
+        self.frames_shower.finish_works()
+        self.products_adder.finish_works()
 
 def main():
     app = Application()

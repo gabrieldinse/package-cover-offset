@@ -12,14 +12,16 @@ from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
 from PyQt5 import uic
 
 # Local application imports
+from ApplicationWindows.TemplateDialog import TemplateDialog
 
 
 class SettingsDialog(QDialog):
-    def __init__(self, application, parent=None):
+    def __init__(self, product_name, parent=None):
         super().__init__(parent)
-        uic.loadUi("settings_dialog.ui", self)
+        uic.loadUi("ApplicationWindows/settings_dialog.ui", self)
 
-        self.application = application
+        self.window_name = product_name
+        self.setWindowTitle(product_name)
 
         self.scene = QGraphicsScene()
         self.graphics_view.setScene(self.scene)
@@ -44,6 +46,9 @@ class SettingsDialog(QDialog):
             self.gaussian_kernel_spin_box_value_changed)
         self.opening_kernel_spin_box.valueChanged.connect(
             self.opening_kernel_spin_box_value_changed)
+
+        self.next_push_button.clicked.connect(
+            self.next_push_button_clicked)
 
     def min_h_slider_value_changed(self):
         self.min_h = self.min_h_slider.value()
@@ -81,3 +86,7 @@ class SettingsDialog(QDialog):
             self.gaussian_kernel_spin_box.setValue(
                 self.gaussian_kernel_spin_box.value() + 1)
         self.gaussian_kernel_size = self.gaussian_kernel_spin_box.value()
+
+    def next_push_button_clicked(self):
+        template_dialog = TemplateDialog(self.window_name, self)
+        template_dialog.exec()

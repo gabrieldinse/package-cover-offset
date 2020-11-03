@@ -468,10 +468,10 @@ border-style:solid;</string>
      </size>
     </property>
    </widget>
-   <widget class="QGraphicsView" name="main_graphics_view">
+   <widget class="QGraphicsView" name="graphics_view">
     <property name="geometry">
      <rect>
-      <x>150</x>
+      <x>140</x>
       <y>340</y>
       <width>480</width>
       <height>360</height>

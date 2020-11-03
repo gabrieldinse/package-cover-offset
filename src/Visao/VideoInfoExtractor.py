@@ -12,17 +12,14 @@ import cv2
 
 # Local application imports
 from Helper import WorkerQueue, VideoInfoEvents
+from Visao.Camera import Camera
 
 
 class VideoInfoExtractor:
-    def __init__(self, application, video_source=0,
-                 camera_resolution=(640, 480)):
+    def __init__(self, application):
         self.sentinel = object()
         self.events = VideoInfoEvents()
-        self.camera = cv2.VideoCapture(video_source)
-        self.camera_resolution = camera_resolution
-        self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.camera_resolution[0])
-        self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.camera_resolution[1])
+        self.camera = Camera()
 
         self.running = False
 
@@ -107,9 +104,7 @@ class VideoInfoExtractor:
         """ Cria uma mascara de captura baseada nos parametros de captura. """
 
         self.capture_mask = np.zeros(
-            (int(self.camera.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-             int(self.camera.get(cv2.CAP_PROP_FRAME_WIDTH))),
-            dtype=np.uint8)
+            (int(self.camera.height), int(self.camera.width)), dtype=np.uint8)
 
         self.capture_mask[
             self.min_frame_height:
@@ -127,9 +122,10 @@ class VideoInfoExtractor:
             mask=self.segment_mask)
 
     def stop(self):
-        self.running = False
         self.products.put(self.sentinel)
         self.frames.put(self.sentinel)
+        self.camera.release()
+        self.running = False
 
     def run(self):
         self.running = True
