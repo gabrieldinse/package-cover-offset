@@ -34,7 +34,6 @@ class SegmentationSettings(QDialog):
         self.pixmap = QGraphicsPixmapItem()
         self.scene.addItem(self.pixmap)
 
-
         # # Coneccao dos signals e slots
         self.min_h_slider.valueChanged.connect(
             self.min_h_slider_value_changed)
@@ -57,11 +56,6 @@ class SegmentationSettings(QDialog):
         self.next_push_button.clicked.connect(
             self.next_push_button_clicked)
 
-        self.frames_processor_timer = QTimer()
-        self.frames_processor_timer.timeout.connect(
-            self.segment_and_show_frame)
-        self.frames_processor_timer.start(0)
-
         self.min_h = 0
         self.max_h = 255
         self.min_s = 0
@@ -79,6 +73,11 @@ class SegmentationSettings(QDialog):
         self.opening_kernel = circular_kernel(self.opening_kernel_size)
         self.opening_kernel_spin_box.setValue(self.opening_kernel_size)
         self.gaussian_kernel_spin_box.setValue(self.gaussian_kernel_size)
+
+        self.frames_processor_timer = QTimer()
+        self.frames_processor_timer.timeout.connect(
+            self.segment_and_show_frame)
+        self.frames_processor_timer.start(0)
 
 
     def segment_and_show_frame(self):
@@ -104,9 +103,9 @@ class SegmentationSettings(QDialog):
             # Frame segmentado
             gui_frame = QImage(processed_frame.data, width, height,
                                bytes_per_line, QImage.Format_RGB888)
-            gui_frame = gui_frame.scaled(355, 355, Qt.KeepAspectRatio)
+            gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
             self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
-    
+
     def get_segmentation_info(self):
         return SegmentationInfo(self.product_name, self.min_h, self.max_h, self.min_s,
                                 self.max_s, self.min_v, self.max_v,
@@ -151,4 +150,5 @@ class SegmentationSettings(QDialog):
 
     def next_push_button_clicked(self):
         self.camera.release()
+        self.closed_for_next_step = True
         self.close()

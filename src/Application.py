@@ -8,7 +8,7 @@ import sys
 from threading import Thread
 
 # Third party modules
-from PyQt5.QtWidgets import (QApplication)
+from PyQt5.QtWidgets import QApplication
 
 
 # Local application imports

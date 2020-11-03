@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
                              QMainWindow, QInputDialog, QLineEdit)
 from PyQt5.QtCore import QDir
 from PyQt5 import uic
+import cv2
 
 # Local application imports
 from ApplicationWindows.SegmentationSettings import SegmentationSettings
@@ -45,16 +46,9 @@ class MainWindow(QMainWindow):
     def show_frames(self, frame, mask):
         bytes_per_line = 3 * width
 
-        # Frame segmentado
-        gui_frame = QImage(self.processed_frame.data, width, height,
-                           bytes_per_line, QImage.Format_RGB888)
-        gui_frame = gui_frame.scaled(355, 355, Qt.KeepAspectRatio)
-        self.segmentation_pixmap.setPixmap(QPixmap.fromImage(gui_frame))
-
-        # Frame original com realidade aumentada
         gui_frame = QImage(self.frame.data, width, height,
                            bytes_per_line, QImage.Format_RGB888)
-        gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
+        gui_frame = gui_frame.scaleToWidth(470, Qt.KeepAspectRatio)
         self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
 
     def add_product(self, product_info):
@@ -91,12 +85,15 @@ class MainWindow(QMainWindow):
         if ok and product_name:
             segmentation_dialog = SegmentationSettings(product_name, parent=self)
             segmentation_dialog.exec()
-            product_type = segmentation_dialog.get_segmentation_info()
-            print(product_type)
 
-            template_dialog = TemplatePicking(product_name, parent=self)
-            template_dialog.exec()
-            template = template_dialog.get_template()
+            if segmentation_dialog.closed_for_next_step:
+                segmentation_info = segmentation_dialog.get_segmentation_info()
+                template_dialog = TemplatePicking(product_name, parent=self)
+                template_dialog.exec()
+
+                if template_dialog.close_for_next_step:
+                    template = template_dialog.get_template()
+                    cv2.imshow("test", template)
 
     def edit_product_push_button_clicked(self):
         pass
