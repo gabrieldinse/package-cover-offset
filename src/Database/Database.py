@@ -12,7 +12,7 @@ import random
 import mysql.connector as mariadb
 
 # Local application imports
-from Helper import ProductInfo
+from Helper import ProductInfo, SegmentationInfo
 
 
 class Database:
@@ -47,13 +47,17 @@ class Database:
         self.production_started = True
 
 
-    def register_product_type(self, name, hmin, hmax, smin, smax, vmin, vmax):
+    def register_product_type(self, product_type : SegmentationInfo):
         self.cursor.execute(f'''
             INSERT INTO tipo_produto
                 (NomeProduto, HueMin, HueMax, SaturationMin, SaturationMax,
-                 ValueMin, ValueMax)
+                 ValueMin, ValueMax, FiltroGaussiano, FiltroAbertura)
             VALUES
-                ("{name}", {hmin}, {hmax}, {smin}, {smax}, {vmin}, {vmax})
+                ("{product_type.name}", {product_type.min_h},
+                 {product_type.max_h}, {product_type.min_s},
+                 {product_type.max_s}, {product_type.min_v},
+                 {product_type.max_v}, {product_type.gaussian_filter_size},
+                 {product_type.openning_filter_size})
         ''')
         self.connection.commit()
 

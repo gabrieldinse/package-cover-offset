@@ -12,7 +12,8 @@ from PyQt5.QtCore import QDir
 from PyQt5 import uic
 
 # Local application imports
-from ApplicationWindows.SettingsDialog import SettingsDialog
+from ApplicationWindows.SegmentationSettings import SegmentationSettings
+from ApplicationWindows.TemplatePicking import TemplatePicking
 
 
 class MainWindow(QMainWindow):
@@ -88,8 +89,14 @@ class MainWindow(QMainWindow):
             self, "QInputDialog().getText()", "Product name:",
             QLineEdit.Normal, "")
         if ok and product_name:
-            settings_dialog = SettingsDialog(product_name, parent=self)
-            settings_dialog.exec()
+            segmentation_dialog = SegmentationSettings(product_name, parent=self)
+            segmentation_dialog.exec()
+            product_type = segmentation_dialog.get_segmentation_info()
+            print(product_type)
+
+            template_dialog = TemplatePicking(product_name, parent=self)
+            template_dialog.exec()
+            template = template_dialog.get_template()
 
     def edit_product_push_button_clicked(self):
         pass

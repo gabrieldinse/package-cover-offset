@@ -19,7 +19,7 @@ class VideoInfoExtractor:
     def __init__(self, application):
         self.sentinel = object()
         self.events = VideoInfoEvents()
-        self.camera = Camera()
+        self.camera = None
 
         self.running = False
 
@@ -129,6 +129,7 @@ class VideoInfoExtractor:
 
     def run(self):
         self.running = True
+        self.camera = Camera()
 
         while True:
             if not self.running:

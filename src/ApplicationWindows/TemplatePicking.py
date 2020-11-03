@@ -1,5 +1,5 @@
 # Author: Gabriel Dinse
-# File: TemplateDialog.py
+# File: TemplatePicking.py
 # Date: 11/3/2020
 # Made with PyCharm
 
@@ -53,13 +53,25 @@ class TemplateConfigurationScene(QGraphicsScene):
             self.addItem(self.line_right)
 
 
-class TemplateDialog(QDialog):
+class TemplatePicking(QDialog):
     def __init__(self, product_name, parent=None):
         super().__init__(parent)
         uic.loadUi("ApplicationWindows/template_dialog.ui", self)
         self.setWindowTitle(product_name)
+        self.product_name = product_name
+
+        self.camera = Camera()
 
         self.scene = TemplateConfigurationScene()
         self.graphics_view.setScene(self.scene)
         self.pixmap = QGraphicsPixmapItem()
         self.scene.addItem(self.pixmap)
+
+        self.finish_push_button.clicked.connect(self.finish_push_button_clicked)
+
+    def get_template(self):
+        pass
+
+    def finish_push_button_clicked(self):
+        self.camera.release()
+        self.close()
