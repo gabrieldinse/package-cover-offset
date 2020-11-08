@@ -6,6 +6,7 @@
 # Standard Library
 import datetime
 from queue import Queue
+from dataclasses import dataclass
 
 # Third party modules
 import pydispatch
@@ -13,28 +14,36 @@ import numpy as np
 
 # Local application imports
 
-
+@dataclass
 class ProductInfo:
-    def __init__(self, offset, has_cover):
-        self.datetime_produced = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.offset = offset
-        self.has_cover = has_cover
+    datetime_produced : str
+    offset : float
+    has_cover : bool
 
 
+@dataclass
 class SegmentationInfo:
-    def __init__(self, name, min_h, max_h, min_s, max_s, min_v, max_v,
-                 gaussian_filter_size, openning_filter_size):
-        self.name = name
-        self.min_h = min_h
-        self.max_h = max_h
-        self.min_s = min_s
-        self.max_s = max_s
-        self.min_v = min_v
-        self.max_v = max_v
-        self.gaussian_filter_size = gaussian_filter_size
-        self.openning_filter_size = openning_filter_size
+    min_h : int
+    max_h : int
+    min_s : int
+    max_s : int
+    min_v : int
+    max_v : int
+    gaussian_filter_size : int
+    openning_filter_size : int
 
 
+@dataclass
+class ProductType:
+    name : str
+    segmentation_info : SegmentationInfo
+    template : np.ndarray
+
+
+@dataclass
+class DatabaseProductType:
+    id : int
+    name : str
 
 
 class WorkerQueue:
@@ -58,17 +67,19 @@ class WorkerQueue:
                 args, kwargs = item
                 self.callback(*args, **kwargs)
             finally:
-                # Importante para o caso de multithreading para quando der
-                # join na fila
-                self.queue.task_done()
+                self.queue.task_done()  # Para o caso de multithreading
 
 
 class VideoInfoEvents(pydispatch.Dispatcher):
     _events_ =  ['new_product', 'new_frame']
 
 class MainWindowEvents(pydispatch.Dispatcher):
-    _events_ = ['vision_system_start', 'vision_system_stop']
+    _events_ = ['vision_system_start', 'vision_system_stop', 'new_product_type',
+                'product_type_edited']
 
+
+def datetime_now():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def circular_kernel(size):
     """ Cria um uma janela circular para aplicacao de convolucao. """
