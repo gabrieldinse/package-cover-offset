@@ -4,6 +4,7 @@
 # Made with PyCharm
 
 # Standard Library
+from threading import Thread
 
 # Third party modules
 from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
@@ -15,6 +16,9 @@ import cv2
 # Local application imports
 from ApplicationWindows.SegmentationSettings import SegmentationSettings
 from ApplicationWindows.TemplatePicking import TemplatePicking
+from Helper import (WorkerQueue, MainWindowEvents, ProductType,
+                    DatabaseProductType)
+
 
 
 class MainWindow(QMainWindow):
@@ -24,6 +28,13 @@ class MainWindow(QMainWindow):
         uic.loadUi("ApplicationWindows/main_window.ui", self)
 
         self.application = application
+
+        self.events = MainWindowEvents()
+
+        self.frames_shower = WorkerQueue(self.show_frames)
+        self.products_adder = WorkerQueue(self.add_product)
+        Thread(target=self.frames_shower.run, args=()).start()
+        Thread(target=self.products_adder.run, args=()).start()
 
         # Visualizacao dos frames no framework do Qt
         self.scene = QGraphicsScene()
@@ -43,6 +54,16 @@ class MainWindow(QMainWindow):
         self.test_push_button.clicked.connect(
             self.test_push_button_clicked)
 
+    def bind(self, **kwargs):
+        self.events.bind(**kwargs)
+
+    def finish_vision(self):
+        self.frames_shower.finish_works()
+        self.products_adder.finish_works()
+
+    def load_product_types(self, database_product_types):
+        pass
+
     def show_frames(self, frame, mask):
         bytes_per_line = 3 * width
 
@@ -52,8 +73,8 @@ class MainWindow(QMainWindow):
         self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
 
     def add_product(self, product_info):
-        self.database.add_product(product_info)
-        # Faz mais coisas com a informação
+        # Mostra na gui
+        pass
 
     def closeEvent(self, event):
         """ Antes de encerrar o programa, salva os arquivos. """
@@ -62,15 +83,16 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def start_push_button_clicked(self):
+        self.events.emit("vision_system_start")
         self.state_label.setText('ON')
         self.state_label.setStyleSheet(
             'border-color: rgb(100, 100, 100);'
             'border-width: 2px;'
             'border-style: solid;'
             'color: rgb(0, 255, 0);')
-        # Thread(target=self.vision_system.run, args=()).start()
 
     def stop_push_button_clicked(self):
+        self.events.emit("vision_system_stop")
         self.state_label.setText('OFF')
         self.state_label.setStyleSheet(
             'border-color: rgb(100, 100, 100);'
@@ -80,7 +102,7 @@ class MainWindow(QMainWindow):
 
     def register_product_push_button_clicked(self):
         product_name, ok = QInputDialog().getText(
-            self, "QInputDialog().getText()", "Product name:",
+            self, "Nome do produto", "Nome do produto",
             QLineEdit.Normal, "")
         if ok and product_name:
             segmentation_dialog = SegmentationSettings(product_name, parent=self)
@@ -88,12 +110,17 @@ class MainWindow(QMainWindow):
 
             if segmentation_dialog.closed_for_next_step:
                 segmentation_info = segmentation_dialog.get_segmentation_info()
+
                 template_dialog = TemplatePicking(product_name, parent=self)
                 template_dialog.exec()
 
-                if template_dialog.close_for_next_step:
+                if template_dialog.closed_for_next_step:
                     template = template_dialog.get_template()
                     cv2.imshow("test", template)
+
+                    self.events.emit(
+                        "new_product_type", ProductType(product_name, segmentation_info,
+                                                        template))
 
     def edit_product_push_button_clicked(self):
         pass

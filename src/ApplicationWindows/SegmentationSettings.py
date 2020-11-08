@@ -20,12 +20,13 @@ from Helper import SegmentationInfo, circular_kernel
 
 
 class SegmentationSettings(QDialog):
-    def __init__(self, product_name, parent=None):
+    def __init__(self, window_name, parent=None):
         super().__init__(parent)
         uic.loadUi("ApplicationWindows/segmentation_settings_dialog.ui", self)
 
-        self.product_name = product_name
-        self.setWindowTitle(product_name)
+        self.window_name = window_name
+        self.setWindowTitle(self.window_name)
+        self.closed_for_next_step = False
 
         self.camera = Camera()
 
@@ -107,9 +108,10 @@ class SegmentationSettings(QDialog):
             self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
 
     def get_segmentation_info(self):
-        return SegmentationInfo(self.product_name, self.min_h, self.max_h, self.min_s,
+        return SegmentationInfo(self.min_h, self.max_h, self.min_s,
                                 self.max_s, self.min_v, self.max_v,
-                                self.gaussian_kernel_size, self.opening_kernel_size)
+                                self.gaussian_kernel_size,
+                                self.opening_kernel_size)
     
     def min_h_slider_value_changed(self):
         self.min_h = self.min_h_slider.value()

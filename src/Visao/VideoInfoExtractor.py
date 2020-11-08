@@ -23,6 +23,9 @@ class VideoInfoExtractor:
 
         self.running = False
 
+    def bind(self, **kwargs):
+        self.events.bind(**kwargs)
+
     def get_centroids(self):
         """ Extrai da imagem os diametros e centroides da cada laranja. """
 
