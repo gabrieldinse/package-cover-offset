@@ -17,12 +17,14 @@ import cv2
 # Local application imports
 from Visao.Camera import Camera
 from Helper import SegmentationInfo, circular_kernel
+from ApplicationWindows.SegmentationSettingsUi import Ui_Dialog
 
 
 class SegmentationSettings(QDialog):
     def __init__(self, window_name, parent=None):
         super().__init__(parent)
-        uic.loadUi("ApplicationWindows/segmentation_settings_dialog.ui", self)
+        self.ui = Ui_Dialog()
+        self.ui.setupUi(self)
 
         self.window_name = window_name
         self.setWindowTitle(self.window_name)
@@ -31,30 +33,30 @@ class SegmentationSettings(QDialog):
         self.camera = Camera()
 
         self.scene = QGraphicsScene()
-        self.graphics_view.setScene(self.scene)
+        self.ui.graphics_view.setScene(self.scene)
         self.pixmap = QGraphicsPixmapItem()
         self.scene.addItem(self.pixmap)
 
         # # Coneccao dos signals e slots
-        self.min_h_slider.valueChanged.connect(
+        self.ui.min_h_slider.valueChanged.connect(
             self.min_h_slider_value_changed)
-        self.max_h_slider.valueChanged.connect(
+        self.ui.max_h_slider.valueChanged.connect(
             self.max_h_slider_value_changed)
-        self.min_s_slider.valueChanged.connect(
+        self.ui.min_s_slider.valueChanged.connect(
             self.min_s_slider_value_changed)
-        self.max_s_slider.valueChanged.connect(
+        self.ui.max_s_slider.valueChanged.connect(
             self.max_s_slider_value_changed)
-        self.min_v_slider.valueChanged.connect(
+        self.ui.min_v_slider.valueChanged.connect(
             self.min_v_slider_value_changed)
-        self.max_v_slider.valueChanged.connect(
+        self.ui.max_v_slider.valueChanged.connect(
             self.max_v_slider_value_changed)
 
-        self.gaussian_kernel_spin_box.valueChanged.connect(
+        self.ui.gaussian_kernel_spin_box.valueChanged.connect(
             self.gaussian_kernel_spin_box_value_changed)
-        self.opening_kernel_spin_box.valueChanged.connect(
+        self.ui.opening_kernel_spin_box.valueChanged.connect(
             self.opening_kernel_spin_box_value_changed)
 
-        self.next_push_button.clicked.connect(
+        self.ui.next_push_button.clicked.connect(
             self.next_push_button_clicked)
 
         self.min_h = 0
@@ -63,17 +65,17 @@ class SegmentationSettings(QDialog):
         self.max_s = 255
         self.min_v = 0
         self.max_v = 255
-        self.min_h_slider.setValue(self.min_h)
-        self.max_h_slider.setValue(self.max_h)
-        self.min_s_slider.setValue(self.min_s)
-        self.max_s_slider.setValue(self.max_s)
-        self.min_v_slider.setValue(self.min_v)
-        self.max_v_slider.setValue(self.max_v)
+        self.ui.min_h_slider.setValue(self.min_h)
+        self.ui.max_h_slider.setValue(self.max_h)
+        self.ui.min_s_slider.setValue(self.min_s)
+        self.ui.max_s_slider.setValue(self.max_s)
+        self.ui.min_v_slider.setValue(self.min_v)
+        self.ui.max_v_slider.setValue(self.max_v)
         self.opening_kernel_size = 5
         self.gaussian_kernel_size = 5
         self.opening_kernel = circular_kernel(self.opening_kernel_size)
-        self.opening_kernel_spin_box.setValue(self.opening_kernel_size)
-        self.gaussian_kernel_spin_box.setValue(self.gaussian_kernel_size)
+        self.ui.opening_kernel_spin_box.setValue(self.opening_kernel_size)
+        self.ui.gaussian_kernel_spin_box.setValue(self.gaussian_kernel_size)
 
         self.frames_processor_timer = QTimer()
         self.frames_processor_timer.timeout.connect(
@@ -114,41 +116,41 @@ class SegmentationSettings(QDialog):
                                 self.opening_kernel_size)
     
     def min_h_slider_value_changed(self):
-        self.min_h = self.min_h_slider.value()
-        self.min_h_label.setText(str(self.min_h))
+        self.min_h = self.ui.min_h_slider.value()
+        self.ui.min_h_label.setText(str(self.min_h))
 
     def max_h_slider_value_changed(self):
-        self.max_h = self.max_h_slider.value()
-        self.max_h_label.setText(str(self.max_h))
+        self.max_h = self.ui.max_h_slider.value()
+        self.ui.max_h_label.setText(str(self.max_h))
 
     def min_s_slider_value_changed(self):
-        self.min_s = self.min_s_slider.value()
-        self.min_s_label.setText(str(self.min_s))
+        self.min_s = self.ui.min_s_slider.value()
+        self.ui.min_s_label.setText(str(self.min_s))
 
     def max_s_slider_value_changed(self):
-        self.max_s = self.max_s_slider.value()
-        self.max_s_label.setText(str(self.max_s))
+        self.max_s = self.ui.max_s_slider.value()
+        self.ui.max_s_label.setText(str(self.max_s))
 
     def min_v_slider_value_changed(self):
-        self.min_v = self.min_v_slider.value()
-        self.min_v_label.setText(str(self.min_v))
+        self.min_v = self.ui.min_v_slider.value()
+        self.ui.min_v_label.setText(str(self.min_v))
 
     def max_v_slider_value_changed(self):
-        self.max_v = self.max_v_slider.value()
-        self.max_v_label.setText(str(self.max_v))
+        self.max_v = self.ui.max_v_slider.value()
+        self.ui.max_v_label.setText(str(self.max_v))
 
     def opening_kernel_spin_box_value_changed(self):
-        if self.opening_kernel_spin_box.value() % 2 == 0:
-            self.opening_kernel_spin_box.setValue(
-                self.opening_kernel_spin_box.value() + 1)
-        self.opening_kernel_size = self.opening_kernel_spin_box.value()
+        if self.ui.opening_kernel_spin_box.value() % 2 == 0:
+            self.ui.opening_kernel_spin_box.setValue(
+                self.ui.opening_kernel_spin_box.value() + 1)
+        self.opening_kernel_size = self.ui.opening_kernel_spin_box.value()
         self.opening_kernel = circular_kernel(self.opening_kernel_size)
 
     def gaussian_kernel_spin_box_value_changed(self):
-        if self.gaussian_kernel_spin_box.value() % 2 == 0:
-            self.gaussian_kernel_spin_box.setValue(
-                self.gaussian_kernel_spin_box.value() + 1)
-        self.gaussian_kernel_size = self.gaussian_kernel_spin_box.value()
+        if self.ui.gaussian_kernel_spin_box.value() % 2 == 0:
+            self.ui.gaussian_kernel_spin_box.setValue(
+                self.ui.gaussian_kernel_spin_box.value() + 1)
+        self.gaussian_kernel_size = self.ui.gaussian_kernel_spin_box.value()
 
     def next_push_button_clicked(self):
         self.camera.release()

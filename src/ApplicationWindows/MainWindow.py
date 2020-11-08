@@ -5,6 +5,7 @@
 
 # Standard Library
 from threading import Thread
+from collections.abc import Iterable
 
 # Third party modules
 from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
@@ -18,16 +19,15 @@ from ApplicationWindows.SegmentationSettings import SegmentationSettings
 from ApplicationWindows.TemplatePicking import TemplatePicking
 from Helper import (WorkerQueue, MainWindowEvents, ProductType,
                     DatabaseProductType)
+from ApplicationWindows.MainWindowUi import Ui_MainWindow
 
 
 
 class MainWindow(QMainWindow):
     def __init__(self, application):
         super().__init__()
-
-        uic.loadUi("ApplicationWindows/main_window.ui", self)
-
-        self.application = application
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
 
         self.events = MainWindowEvents()
 
@@ -38,20 +38,20 @@ class MainWindow(QMainWindow):
 
         # Visualizacao dos frames no framework do Qt
         self.scene = QGraphicsScene()
-        self.graphics_view.setScene(self.scene)
+        self.ui.graphics_view.setScene(self.scene)
         self.pixmap = QGraphicsPixmapItem()
         self.scene.addItem(self.pixmap)
 
         # Coneccao dos signals e slots
-        self.start_push_button.clicked.connect(
+        self.ui.start_push_button.clicked.connect(
             self.start_push_button_clicked)
-        self.stop_push_button.clicked.connect(
+        self.ui.stop_push_button.clicked.connect(
             self.stop_push_button_clicked)
-        self.register_product_push_button.clicked.connect(
+        self.ui.register_product_push_button.clicked.connect(
             self.register_product_push_button_clicked)
-        self.edit_product_push_button.clicked.connect(
+        self.ui.edit_product_push_button.clicked.connect(
             self.edit_product_push_button_clicked)
-        self.test_push_button.clicked.connect(
+        self.ui.test_push_button.clicked.connect(
             self.test_push_button_clicked)
 
     def bind(self, **kwargs):
@@ -79,13 +79,13 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """ Antes de encerrar o programa, salva os arquivos. """
 
-        self.application.finish_works()
+        self.finish_vision()
         event.accept()
 
     def start_push_button_clicked(self):
         self.events.emit("vision_system_start")
-        self.state_label.setText('ON')
-        self.state_label.setStyleSheet(
+        self.ui.state_label.setText('ON')
+        self.ui.state_label.setStyleSheet(
             'border-color: rgb(100, 100, 100);'
             'border-width: 2px;'
             'border-style: solid;'
@@ -93,8 +93,8 @@ class MainWindow(QMainWindow):
 
     def stop_push_button_clicked(self):
         self.events.emit("vision_system_stop")
-        self.state_label.setText('OFF')
-        self.state_label.setStyleSheet(
+        self.ui.state_label.setText('OFF')
+        self.ui.state_label.setStyleSheet(
             'border-color: rgb(100, 100, 100);'
             'border-width: 2px;'
             'border-style: solid;'
@@ -122,6 +122,12 @@ class MainWindow(QMainWindow):
                         "new_product_type", ProductType(product_name, segmentation_info,
                                                         template))
 
+    def add_product_types_to_list(self, items):
+        if isinstance(items, DatabaseProductType):
+            pass
+        elif isinstance(items, Iterable):
+            pass
+
     def edit_product_push_button_clicked(self):
         pass
 
@@ -132,16 +138,7 @@ class MainWindow(QMainWindow):
         # Ultima laranja
         formatted_diameter_text = '{:.2f}mm'.format(
             self.data_writer.oranges[-1].diameter)
-        self.last_diameter_label.setText(formatted_diameter_text)
-        self.last_color_label.setText(str(
-            self.data_writer.oranges[-1].color.value))
-        color = self.data_writer.oranges[-1].rgb
-        frame_color = QColor(int(color[0]), int(color[1]), int(color[2]))
-        self.last_color_frame.setStyleSheet(
-            'border-color: rgb(147, 103, 53);'
-            'border-width : 2px;'
-            'border-style:solid;'
-            'background-color: {};'.format(frame_color.name()))
+        self.ui.last_diameter_label.setText(formatted_diameter_text)
 
         # Media de todas as laranjas
         formatted_diameter_text = '{:.2f}mm'.format(
@@ -149,13 +146,6 @@ class MainWindow(QMainWindow):
         self.average_color_label.setText(str(
             self.data_writer.average_color.value))
         self.average_diameter_label.setText(formatted_diameter_text)
-        color = self.data_writer.average_rgb
-        frame_color = QColor(int(color[0]), int(color[1]), int(color[2]))
-        self.average_color_frame.setStyleSheet(
-            'border-color: rgb(147, 103, 53);'
-            'border-width : 2px;'
-            'border-style:solid;'
-            'background-color: {};'.format(frame_color.name()))
 
         # Numero total de laranjas
         self.number_of_oranges_label.setText(

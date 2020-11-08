@@ -17,6 +17,7 @@ import cv2
 
 # Local application imports
 from Visao.Camera import Camera
+from ApplicationWindows.TemplatePickingUi import Ui_Dialog
 
 
 class TemplateConfigurationScene(QGraphicsScene):
@@ -105,7 +106,8 @@ class TemplateConfigurationScene(QGraphicsScene):
 class TemplatePicking(QDialog):
     def __init__(self, window_name, parent=None):
         super().__init__(parent)
-        uic.loadUi("ApplicationWindows/template_dialog.ui", self)
+        self.ui = Ui_Dialog()
+        self.ui.setupUi(self)
 
         self.window_name = window_name
         self.setWindowTitle(self.window_name)
@@ -114,13 +116,13 @@ class TemplatePicking(QDialog):
         self.camera = Camera()
 
         self.scene = TemplateConfigurationScene()
-        self.graphics_view.setScene(self.scene)
+        self.ui.graphics_view.setScene(self.scene)
         self.pixmap = QGraphicsPixmapItem()
         self.scene.addItem(self.pixmap)
-        self.graphics_view.setMouseTracking(True)
+        self.ui.graphics_view.setMouseTracking(True)
 
-        self.finish_push_button.clicked.connect(self.finish_push_button_clicked)
-        self.reset_push_button.clicked.connect(self.reset_push_button_clicked)
+        self.ui.finish_push_button.clicked.connect(self.finish_push_button_clicked)
+        self.ui.reset_push_button.clicked.connect(self.reset_push_button_clicked)
 
         self.frames_processor_timer = QTimer()
         self.frames_processor_timer.timeout.connect(
