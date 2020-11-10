@@ -49,20 +49,20 @@ for meth in methods:
             top_left = min_loc
         else:
             top_left = max_loc
-        # bottom_right = (top_left[0] + w, top_left[1] + h)
+        bottom_right = (top_left[0] + w, top_left[1] + h)
         #
-        # cv2.rectangle(img,top_left, bottom_right, 255, 2)
+        cv2.rectangle(img,top_left, bottom_right, 255, 2)
         #
-        # res = cv2.cvtColor(res, cv2.COLOR_BGR2RGB)
-        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        res = cv2.cvtColor(res, cv2.COLOR_BGR2RGB)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         #
-        # plt.subplot(121),plt.imshow(res, cmap='gray')
-        # plt.title('Matching Result'), plt.xticks([]), plt.yticks([])
-        # plt.subplot(122),plt.imshow(img)
-        # plt.title('Detected Point'), plt.xticks([]), plt.yticks([])
-        # plt.suptitle(meth)
-        #
-        # plt.show()
+        plt.subplot(121),plt.imshow(res, cmap='gray')
+        plt.title('Matching Result'), plt.xticks([]), plt.yticks([])
+        plt.subplot(122),plt.imshow(img)
+        plt.title('Detected Point'), plt.xticks([]), plt.yticks([])
+        plt.suptitle(meth)
+
+        plt.show()
 
 
 bottom_right = (found[1][0] + w, found[1][1] + h)
