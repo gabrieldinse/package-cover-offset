@@ -11,7 +11,7 @@ from threading import Thread
 import cv2
 
 # Local application imports
-from Helper import WorkerQueue, VideoInfoEvents
+from Helper import WorkerQueue, VideoInfoEvents, ProductType
 from Visao.Camera import Camera
 
 
@@ -25,6 +25,9 @@ class VideoInfoExtractor:
 
     def bind(self, **kwargs):
         self.events.bind(**kwargs)
+
+    def load_product_type(self, product_type : ProductType):
+        pass
 
     def get_centroids(self):
         """ Extrai da imagem os diametros e centroides da cada laranja. """

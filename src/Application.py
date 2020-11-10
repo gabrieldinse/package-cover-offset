@@ -6,29 +6,30 @@
 # Standard Library
 import sys
 from threading import Thread
+import subprocess
 
 # Third party modules
 from PyQt5.QtWidgets import QApplication
 
 
 # Local application imports
-from Database.Database import Database
+from Data.DataStorager import Database
 from ApplicationWindows.MainWindow import MainWindow
 from Visao.VideoInfoExtractor import VideoInfoExtractor
-from Helper import WorkerQueue
+from Helper import WorkerQueue, ProductType, ProductInfo
 
 
 class Application:
     def __init__(self):
         self.application = QApplication(sys.argv)
-        self.database = Database()
-        self.window = MainWindow(self)
+        self.data_storager = DataStorager()
+        self.window = MainWindow()
         self.vision_system = VideoInfoExtractor(self)
 
         # A aplicação lida com os eventos dos sistemas (observer)
         self.vision_system.bind(new_frame=self.add_frame)
-        self.vision_system.bind(new_product=self.add_product)
-        self.window.bind(new_product_type=self.add_product_type)
+        self.vision_system.bind(new_product=self.register_product)
+        self.window.bind(new_product_type=self.register_product_type)
         self.window.bind(product_type_edited=self.edit_product_type)
         self.window.bind(vision_system_start=self.start_vision_system)
         self.window.bind(vision_system_stop=self.stop_vision_system)
@@ -38,11 +39,22 @@ class Application:
     def add_frame(self, frame, mask):
         self.window.frames_shower.put(frame, mask)
 
-    def add_product(self, product_info):
+    def register_product(self, product_info : ProductInfo):
+        # self.database.register_product(product_info)
         self.window.products_adder.put(product_info)
-        # Poe na database
 
-    def add_product_type(self, product_type):
+    def register_product_type(self, product_type : ProductType):
+        pass
+        # product_type_id = self.data_storager.register_product_type(product_type)
+
+    def save_template(self, product_id, template):
+        pass
+
+    def load_product_type(self, product_type_id):
+        # product_type = self.data_storager.get_product_type(product_type_id)
+        self.vision_system.load_product_type()
+
+    def load_template(self, product_id):
         pass
 
     def edit_product_type(self, product_type_id, product_type):
@@ -61,9 +73,10 @@ class Application:
         sys.exit(self.application.exec_())   # Blocks
 
     def finish_works(self):
-
+        pass
 
 def main():
+    subprocess.call([r'.\ApplicationWindows\generate_py_code_from_ui.bat'])
     app = Application()
     app.run()
 

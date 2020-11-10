@@ -24,7 +24,7 @@ from ApplicationWindows.MainWindowUi import Ui_MainWindow
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, application):
+    def __init__(self):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -53,6 +53,8 @@ class MainWindow(QMainWindow):
             self.edit_product_push_button_clicked)
         self.ui.test_push_button.clicked.connect(
             self.test_push_button_clicked)
+        self.ui.product_type_combo_box.currentIndexChanged.connect(
+            self.product_type_combo_box_index_changed)
 
     def bind(self, **kwargs):
         self.events.bind(**kwargs)
@@ -61,7 +63,7 @@ class MainWindow(QMainWindow):
         self.frames_shower.finish_works()
         self.products_adder.finish_works()
 
-    def load_product_types(self, database_product_types):
+    def load_product_types_to_list(self, database_product_types):
         pass
 
     def show_frames(self, frame, mask):
@@ -75,6 +77,30 @@ class MainWindow(QMainWindow):
     def add_product(self, product_info):
         # Mostra na gui
         pass
+
+    def add_product_types_to_list(self, items):
+        self.ui.product_type_combo_box.setDisabled(True)
+        if isinstance(items, DatabaseProductType):
+            pass
+        elif isinstance(items, Iterable):
+            pass
+
+    def update_ui_oranges_info(self):
+        # Ultima laranja
+        formatted_diameter_text = '{:.2f}mm'.format(
+            self.data_writer.oranges[-1].diameter)
+        self.ui.last_diameter_label.setText(formatted_diameter_text)
+
+        # Media de todas as laranjas
+        formatted_diameter_text = '{:.2f}mm'.format(
+            self.data_writer.average_diameter)
+        self.average_color_label.setText(str(
+            self.data_writer.average_color.value))
+        self.average_diameter_label.setText(formatted_diameter_text)
+
+        # Numero total de laranjas
+        self.number_of_oranges_label.setText(
+            str(self.data_writer.quantity))
 
     def closeEvent(self, event):
         """ Antes de encerrar o programa, salva os arquivos. """
@@ -122,31 +148,11 @@ class MainWindow(QMainWindow):
                         "new_product_type", ProductType(product_name, segmentation_info,
                                                         template))
 
-    def add_product_types_to_list(self, items):
-        if isinstance(items, DatabaseProductType):
-            pass
-        elif isinstance(items, Iterable):
-            pass
+    def product_type_combo_box_index_changed(self):
+        pass
 
     def edit_product_push_button_clicked(self):
         pass
 
     def test_push_button_clicked(self):
         pass
-
-    def update_ui_oranges_info(self):
-        # Ultima laranja
-        formatted_diameter_text = '{:.2f}mm'.format(
-            self.data_writer.oranges[-1].diameter)
-        self.ui.last_diameter_label.setText(formatted_diameter_text)
-
-        # Media de todas as laranjas
-        formatted_diameter_text = '{:.2f}mm'.format(
-            self.data_writer.average_diameter)
-        self.average_color_label.setText(str(
-            self.data_writer.average_color.value))
-        self.average_diameter_label.setText(formatted_diameter_text)
-
-        # Numero total de laranjas
-        self.number_of_oranges_label.setText(
-            str(self.data_writer.quantity))

@@ -10,12 +10,13 @@ import random
 
 # Third party modules
 import mysql.connector as mariadb
+import cv2
 
 # Local application imports
-from Helper import ProductInfo, SegmentationInfo, ProductType
+from Helper import ProductInfo, SegmentationInfo, ProductType, ProductTypeName
 
 
-class Database:
+class DataStorager:
     def __init__(self):
         self.connection = mariadb.connect(
             host='localhost',
@@ -24,9 +25,9 @@ class Database:
             database='controle_producao'
         )
         self.cursor = self.connection.cursor()
-        self.production_started = False
+        self.started = False
 
-    def start_production(self, product_type_id, production_id=None):
+    def start(self, product_type_id, production_id=None):
         if production_id is None:
             start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.cursor.execute(f'''
@@ -46,13 +47,14 @@ class Database:
         self.connection.commit()
         self.production_started = True
 
-    def register_product_type(self, name, segmentation_info : SegmentationInfo):
+    def add_product_type(self, product_type : ProductType):
+        segmentation_info = product_type.segmentation_info
         self.cursor.execute(f'''
             INSERT INTO tipo_produto
                 (NomeProduto, HueMin, HueMax, SaturationMin, SaturationMax,
                  ValueMin, ValueMax, FiltroGaussiano, FiltroAbertura)
             VALUES
-                ("{name}", {segmentation_info.min_h},
+                ("{product_type.name}", {segmentation_info.min_h},
                  {segmentation_info.max_h}, {segmentation_info.min_s},
                  {segmentation_info.max_s}, {segmentation_info.min_v},
                  {segmentation_info.max_v},
@@ -60,15 +62,38 @@ class Database:
                  {segmentation_info.openning_filter_size})
         ''')
         self.connection.commit()
+        product_type_id = self.cursor.lastrowid
+        cv2.imwrite(f"Data/template/{product_type_id}.png",
+                    product_type.template)
+        return product_type_id
 
-    def get_product_types(self):
+    def get_product_types_names(self):
         self.cursor.execute(f'''
             SELECT Id, NomeProduto FROM tipo_produto
         ''')
-        return self.cursor.__iter__()
+        product_types_names = []
+        for product_type_name in self.cursor:
+            product_types_names.append(ProductTypeName(*product_type_name))
+        return product_types_names
+
+    def get_product_type(self, product_type_id):
+        self.cursor.execute(f'''
+            SELECT
+                (NomeProduto, HueMin, HueMax, SaturationMin, SaturationMax,
+                 ValueMin, ValueMax, FiltroGaussiano, FiltroAbertura) 
+            FROM tipo_produto
+            WHERE
+                Id == {product_type_id}
+        ''')
+        row = list(self.cursor.__iter__())[0]
+        product_type_id = row[0]
+        template = cv2.imread(f"Data/template/{product_type_id}.png")
+        product_type = ProductType(
+            row[0], SegmentationInfo(*row[1:-1]), template)
+        return product_type
 
     def add_product(self, product_info : ProductInfo):
-        if self.production_started:
+        if self.started:
             self.cursor.execute(f'''
                 INSERT INTO produto
                     (Offset, TemTampa, ProduzidoEm)
@@ -77,7 +102,7 @@ class Database:
                      {int(product_info.has_cover)},
                      "{product_info.datetime_produced}")
             ''')
-            self.last_product_id = self.cursor.lastrowid
+            product_id = self.cursor.lastrowid
 
             self.cursor.execute(f'''
                 INSERT INTO produto_producao
@@ -86,11 +111,12 @@ class Database:
                     ({self.production_id}, {self.last_product_id})
             ''')
             self.connection.commit()
+            return product_id
         else:
             raise RuntimeError("Produção não foi iniciada ainda")
 
-    def stop_production(self):
-        self.production_started = False
+    def stop(self):
+        self.started = False
 
     def close_connection(self):
         self.cursor.close()

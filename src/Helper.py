@@ -41,7 +41,7 @@ class ProductType:
 
 
 @dataclass
-class DatabaseProductType:
+class ProductTypeName:
     id : int
     name : str
 
