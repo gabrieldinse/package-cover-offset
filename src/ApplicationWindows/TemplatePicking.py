@@ -110,10 +110,11 @@ class TemplatePicking(QDialog):
         self.ui.setupUi(self)
 
         self.window_name = window_name
+        self.camera = self.parent().camera
+        self.frames_reader = self.camera.create_frames_reader().start()
+
         self.setWindowTitle(self.window_name)
         self.closed_for_next_step = False
-
-        self.camera = Camera()
 
         self.scene = TemplateConfigurationScene()
         self.ui.graphics_view.setScene(self.scene)
@@ -127,7 +128,7 @@ class TemplatePicking(QDialog):
         self.frames_processor_timer = QTimer()
         self.frames_processor_timer.timeout.connect(
             self.show_frame)
-        self.frames_processor_timer.start(0)
+        self.frames_processor_timer.start(50)
 
     def exec(self):
         self.show()
@@ -137,7 +138,7 @@ class TemplatePicking(QDialog):
         super().exec()
 
     def show_frame(self):
-        grabbed, frame = self.camera.read()
+        grabbed, frame = self.frames_reader.read()
         if grabbed:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             height, width, _ = frame.shape
@@ -158,7 +159,6 @@ class TemplatePicking(QDialog):
         self.scene.reset()
 
     def finish_push_button_clicked(self):
-        grabbed, self.frame = self.camera.read()
-        self.camera.release()
+        grabbed, self.frame = self.frames_reader.read()
         self.closed_for_next_step = True
         self.close()

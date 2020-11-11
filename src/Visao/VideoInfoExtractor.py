@@ -102,7 +102,6 @@ class VideoInfoExtractor:
                                             dtype=np.uint8)
                         self.data_writer.add(
                             diameter * self.diameter_prop, rgb_mean)
-                        self.storage_updated.emit()
                         self.capture_timer = time.time()
                         return
 

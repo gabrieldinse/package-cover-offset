@@ -70,12 +70,15 @@ class WorkerQueue:
                 self.queue.task_done()  # Para o caso de multithreading
 
 
+class CameraEvents(pydispatch.Dispatcher):
+    _events_ = ['new_frame']
+
 class VideoInfoEvents(pydispatch.Dispatcher):
     _events_ =  ['new_product', 'new_frame']
 
 class MainWindowEvents(pydispatch.Dispatcher):
     _events_ = ['vision_system_start', 'vision_system_stop', 'new_product_type',
-                'product_type_edited']
+                'product_type_edited', 'close']
 
 
 def datetime_now():

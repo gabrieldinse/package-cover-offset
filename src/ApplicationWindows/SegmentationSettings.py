@@ -27,10 +27,11 @@ class SegmentationSettings(QDialog):
         self.ui.setupUi(self)
 
         self.window_name = window_name
+        self.camera = self.parent().camera
+        self.frames_reader = self.camera.create_frames_reader().start()
+
         self.setWindowTitle(self.window_name)
         self.closed_for_next_step = False
-
-        self.camera = Camera()
 
         self.scene = QGraphicsScene()
         self.ui.graphics_view.setScene(self.scene)
@@ -80,11 +81,10 @@ class SegmentationSettings(QDialog):
         self.frames_processor_timer = QTimer()
         self.frames_processor_timer.timeout.connect(
             self.segment_and_show_frame)
-        self.frames_processor_timer.start(0)
-
+        self.frames_processor_timer.start(50)
 
     def segment_and_show_frame(self):
-        grabbed, frame = self.camera.read()
+        grabbed, frame = self.frames_reader.read()
         if grabbed:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
@@ -153,6 +153,5 @@ class SegmentationSettings(QDialog):
         self.gaussian_kernel_size = self.ui.gaussian_kernel_spin_box.value()
 
     def next_push_button_clicked(self):
-        self.camera.release()
         self.closed_for_next_step = True
         self.close()

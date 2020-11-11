@@ -4,13 +4,16 @@
 # Made with PyCharm
 
 # Standard Library
+from queue import Queue
 from threading import Thread
 from collections.abc import Iterable
+import time
 
 # Third party modules
 from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
                              QMainWindow, QInputDialog, QLineEdit)
-from PyQt5.QtCore import QDir
+from PyQt5.QtCore import QDir, Qt, QTimer
+from PyQt5.QtGui import QImage, QPixmap
 from PyQt5 import uic
 import cv2
 
@@ -18,22 +21,24 @@ import cv2
 from ApplicationWindows.SegmentationSettings import SegmentationSettings
 from ApplicationWindows.TemplatePicking import TemplatePicking
 from Helper import (WorkerQueue, MainWindowEvents, ProductType,
-                    DatabaseProductType)
+                    ProductTypeName)
 from ApplicationWindows.MainWindowUi import Ui_MainWindow
+from Visao.Camera import Camera
 
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, camera):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
         self.events = MainWindowEvents()
 
-        self.frames_shower = WorkerQueue(self.show_frames)
+        self.camera = camera
+        self.frames_reader = self.camera.create_frames_reader().start()
+
         self.products_adder = WorkerQueue(self.add_product)
-        Thread(target=self.frames_shower.run, args=()).start()
         Thread(target=self.products_adder.run, args=()).start()
 
         # Visualizacao dos frames no framework do Qt
@@ -42,7 +47,7 @@ class MainWindow(QMainWindow):
         self.pixmap = QGraphicsPixmapItem()
         self.scene.addItem(self.pixmap)
 
-        # Coneccao dos signals e slots
+        # Conexao dos signals e slots
         self.ui.start_push_button.clicked.connect(
             self.start_push_button_clicked)
         self.ui.stop_push_button.clicked.connect(
@@ -56,23 +61,32 @@ class MainWindow(QMainWindow):
         self.ui.product_type_combo_box.currentIndexChanged.connect(
             self.product_type_combo_box_index_changed)
 
+        self.frames_processor_timer = QTimer()
+        self.frames_processor_timer.timeout.connect(
+            self.show_frame)
+        self.frames_processor_timer.start(50)
+
     def bind(self, **kwargs):
         self.events.bind(**kwargs)
 
     def finish_vision(self):
-        self.frames_shower.finish_works()
         self.products_adder.finish_works()
 
     def load_product_types_to_list(self, database_product_types):
         pass
 
-    def show_frames(self, frame, mask):
-        bytes_per_line = 3 * width
+    def show_frame(self):
+        grabbed, frame = self.frames_reader.read()
+        if grabbed:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            height, width, _ = frame.shape
+            bytes_per_line = 3 * width
 
-        gui_frame = QImage(self.frame.data, width, height,
-                           bytes_per_line, QImage.Format_RGB888)
-        gui_frame = gui_frame.scaleToWidth(470, Qt.KeepAspectRatio)
-        self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
+            gui_frame = QImage(frame.data, width, height,
+                               bytes_per_line, QImage.Format_RGB888)
+            gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
+            self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
+
 
     def add_product(self, product_info):
         # Mostra na gui
@@ -106,6 +120,7 @@ class MainWindow(QMainWindow):
         """ Antes de encerrar o programa, salva os arquivos. """
 
         self.finish_vision()
+        self.events.emit("close")
         event.accept()
 
     def start_push_button_clicked(self):
@@ -131,19 +146,19 @@ class MainWindow(QMainWindow):
             self, "Nome do produto", "Nome do produto",
             QLineEdit.Normal, "")
         if ok and product_name:
-            segmentation_dialog = SegmentationSettings(product_name, parent=self)
+            segmentation_dialog = SegmentationSettings(
+                product_name, parent=self)
             segmentation_dialog.exec()
 
             if segmentation_dialog.closed_for_next_step:
                 segmentation_info = segmentation_dialog.get_segmentation_info()
 
-                template_dialog = TemplatePicking(product_name, parent=self)
+                template_dialog = TemplatePicking(
+                    product_name, parent=self)
                 template_dialog.exec()
 
                 if template_dialog.closed_for_next_step:
                     template = template_dialog.get_template()
-                    cv2.imshow("test", template)
-
                     self.events.emit(
                         "new_product_type", ProductType(product_name, segmentation_info,
                                                         template))
