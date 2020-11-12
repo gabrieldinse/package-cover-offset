@@ -21,14 +21,14 @@ from ApplicationWindows.SegmentationSettingsUi import Ui_Dialog
 
 
 class SegmentationSettings(QDialog):
-    def __init__(self, window_name, parent=None):
+    def __init__(self, window_name, frames_stream,
+                 segmentation_info=None, parent=None):
         super().__init__(parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.window_name = window_name
-        self.camera = self.parent().camera
-        self.frames_reader = self.camera.create_frames_reader().start()
+        self.frames_stream = frames_stream.start()
 
         self.setWindowTitle(self.window_name)
         self.closed_for_next_step = False
@@ -60,31 +60,45 @@ class SegmentationSettings(QDialog):
         self.ui.next_push_button.clicked.connect(
             self.next_push_button_clicked)
 
-        self.min_h = 0
-        self.max_h = 255
-        self.min_s = 0
-        self.max_s = 255
-        self.min_v = 0
-        self.max_v = 255
+        self.initialize_ui_values(segmentation_info)
+
+        self.show_frame_timer = QTimer()
+        self.show_frame_timer.timeout.connect(
+            self.segment_and_show_frame)
+        self.show_frame_timer.start(50)
+
+    def initialize_ui_values(self, segmentation_info):
+        if segmentation_info is None:
+            self.min_h = 0
+            self.max_h = 255
+            self.min_s = 0
+            self.max_s = 255
+            self.min_v = 0
+            self.max_v = 255
+            self.opening_kernel_size = 5
+            self.gaussian_kernel_size = 5
+        else:
+            self.min_h = segmentation_info.min_h
+            self.max_h = segmentation_info.max_h
+            self.min_s = segmentation_info.min_s
+            self.max_s = segmentation_info.max_s
+            self.min_v = segmentation_info.min_v
+            self.max_v = segmentation_info.max_v
+            self.opening_kernel_size = segmentation_info.opening_kernel_size
+            self.gaussian_kernel_size = segmentation_info.gaussian_kernel_size
+
         self.ui.min_h_slider.setValue(self.min_h)
         self.ui.max_h_slider.setValue(self.max_h)
         self.ui.min_s_slider.setValue(self.min_s)
         self.ui.max_s_slider.setValue(self.max_s)
         self.ui.min_v_slider.setValue(self.min_v)
         self.ui.max_v_slider.setValue(self.max_v)
-        self.opening_kernel_size = 5
-        self.gaussian_kernel_size = 5
         self.opening_kernel = circular_kernel(self.opening_kernel_size)
         self.ui.opening_kernel_spin_box.setValue(self.opening_kernel_size)
         self.ui.gaussian_kernel_spin_box.setValue(self.gaussian_kernel_size)
 
-        self.frames_processor_timer = QTimer()
-        self.frames_processor_timer.timeout.connect(
-            self.segment_and_show_frame)
-        self.frames_processor_timer.start(50)
-
     def segment_and_show_frame(self):
-        grabbed, frame = self.frames_reader.read()
+        grabbed, frame = self.frames_stream.read()
         if grabbed:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
@@ -153,5 +167,7 @@ class SegmentationSettings(QDialog):
         self.gaussian_kernel_size = self.ui.gaussian_kernel_spin_box.value()
 
     def next_push_button_clicked(self):
+        self.show_frame_timer.stop()
+        self.frames_stream.stop()
         self.closed_for_next_step = True
         self.close()

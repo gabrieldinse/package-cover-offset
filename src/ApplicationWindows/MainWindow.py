@@ -28,16 +28,14 @@ from Visao.Camera import Camera
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, camera):
+    def __init__(self, frames_stream):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
         self.events = MainWindowEvents()
 
-        self.camera = camera
-        self.frames_reader = self.camera.create_frames_reader().start()
-
+        self.frames_stream = frames_stream
         self.products_adder = WorkerQueue(self.add_product)
         Thread(target=self.products_adder.run, args=()).start()
 
@@ -60,11 +58,14 @@ class MainWindow(QMainWindow):
             self.test_push_button_clicked)
         self.ui.product_type_combo_box.currentIndexChanged.connect(
             self.product_type_combo_box_index_changed)
+        self.ui.turn_on_camera_push_button.clicked.connect(
+            self.turn_on_camera_push_button_clicked)
+        self.ui.turn_off_camera_push_button.clicked.connect(
+            self.turn_off_camera_push_button_clicked)
 
-        self.frames_processor_timer = QTimer()
-        self.frames_processor_timer.timeout.connect(
+        self.show_frame_timer = QTimer()
+        self.show_frame_timer.timeout.connect(
             self.show_frame)
-        self.frames_processor_timer.start(50)
 
     def bind(self, **kwargs):
         self.events.bind(**kwargs)
@@ -76,7 +77,7 @@ class MainWindow(QMainWindow):
         pass
 
     def show_frame(self):
-        grabbed, frame = self.frames_reader.read()
+        grabbed, frame = self.frames_stream.read()
         if grabbed:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             height, width, _ = frame.shape
@@ -120,6 +121,8 @@ class MainWindow(QMainWindow):
         """ Antes de encerrar o programa, salva os arquivos. """
 
         self.finish_vision()
+        self.show_frame_timer.stop()
+        self.frames_stream.stop()
         self.events.emit("close")
         event.accept()
 
@@ -147,14 +150,14 @@ class MainWindow(QMainWindow):
             QLineEdit.Normal, "")
         if ok and product_name:
             segmentation_dialog = SegmentationSettings(
-                product_name, parent=self)
+                product_name, self.frames_stream.copy(), parent=self)
             segmentation_dialog.exec()
 
             if segmentation_dialog.closed_for_next_step:
                 segmentation_info = segmentation_dialog.get_segmentation_info()
 
                 template_dialog = TemplatePicking(
-                    product_name, parent=self)
+                    product_name, self.frames_stream.copy(), parent=self)
                 template_dialog.exec()
 
                 if template_dialog.closed_for_next_step:
@@ -171,3 +174,21 @@ class MainWindow(QMainWindow):
 
     def test_push_button_clicked(self):
         pass
+
+    def turn_on_camera_push_button_clicked(self):
+        self.events.emit("turn_on_camera")
+        self.ui.turn_on_camera_push_button.setDisabled(True)
+        self.ui.turn_off_camera_push_button.setEnabled(True)
+        self.ui.register_product_push_button.setEnabled(True)
+        self.frames_stream.start()
+        self.show_frame_timer.start(50)
+
+    def turn_off_camera_push_button_clicked(self):
+        self.events.emit("turn_off_camera")
+        self.ui.turn_off_camera_push_button.setDisabled(True)
+        self.ui.turn_on_camera_push_button.setEnabled(True)
+        self.ui.register_product_push_button.setDisabled(True)
+        self.ui.edit_product_push_button.setDisabled(True)
+        self.ui.test_push_button.setDisabled(True)
+        self.show_frame_timer.stop()
+        self.frames_stream.stop()

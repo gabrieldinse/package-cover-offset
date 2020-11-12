@@ -77,8 +77,10 @@ class VideoInfoEvents(pydispatch.Dispatcher):
     _events_ =  ['new_product', 'new_frame']
 
 class MainWindowEvents(pydispatch.Dispatcher):
-    _events_ = ['vision_system_start', 'vision_system_stop', 'new_product_type',
-                'product_type_edited', 'close']
+    _events_ = ['vision_system_start', 'vision_system_stop',
+                'new_product_type', 'product_type_edited',
+                'close',
+                'turn_on_camera', 'turn_off_camera']
 
 
 def datetime_now():

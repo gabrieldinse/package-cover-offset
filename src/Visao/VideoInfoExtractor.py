@@ -129,7 +129,7 @@ class VideoInfoExtractor:
     def stop(self):
         self.products.put(self.sentinel)
         self.frames.put(self.sentinel)
-        self.camera.release()
+        self.camera.turn_off()
         self.running = False
 
     def run(self):

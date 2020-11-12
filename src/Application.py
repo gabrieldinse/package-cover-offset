@@ -17,16 +17,15 @@ from Data.DataStorager import DataStorager
 from ApplicationWindows.MainWindow import MainWindow
 from Visao.VideoInfoExtractor import VideoInfoExtractor
 from Helper import WorkerQueue, ProductType, ProductInfo
-from Visao.Camera import Camera, FramesReader
+from Visao.Camera import Camera, FramesStream
 
 
 class Application:
     def __init__(self):
         self.application = QApplication(sys.argv)
         self.camera = Camera()
-        self.camera.open()
         self.data_storager = DataStorager()
-        self.window = MainWindow(self.camera)
+        self.window = MainWindow(self.camera.create_frames_stream())
         self.vision_system = VideoInfoExtractor(self)
 
         # A aplicação lida com os eventos dos sistemas (observer)
@@ -36,6 +35,8 @@ class Application:
         self.window.bind(vision_system_start=self.start_vision_system)
         self.window.bind(vision_system_stop=self.stop_vision_system)
         self.window.bind(close=self.stop)
+        self.window.bind(turn_on_camera=self.turn_on_camera)
+        self.window.bind(turn_off_camera=self.turn_off_camera)
 
         self.running = False
 
@@ -61,13 +62,19 @@ class Application:
     def stop_vision_system(self):
         self.window.finish_vision()
 
+    def turn_on_camera(self):
+        self.camera.turn_on()
+
+    def turn_off_camera(self):
+        self.camera.turn_off()
+
     def run(self):
         self.running = True
         self.window.show()
         sys.exit(self.application.exec_())   # Blocks
 
     def stop(self):
-        self.camera.release()
+        self.camera.turn_off()
         self.running = False
 
 def main():

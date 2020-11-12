@@ -63,6 +63,7 @@ class Ui_Dialog(object):
 "border-style:solid;")
         self.reset_push_button.setObjectName("reset_push_button")
         self.finish_push_button = QtWidgets.QPushButton(Dialog)
+        self.finish_push_button.setEnabled(False)
         self.finish_push_button.setGeometry(QtCore.QRect(310, 430, 151, 30))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)

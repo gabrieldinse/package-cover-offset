@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
 from PyQt5 import uic
 from PyQt5.QtGui import QBrush, QImage, QPixmap, QPen
 from PyQt5.Qt import QColor
-from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 import cv2
 
 # Local application imports
@@ -21,6 +21,9 @@ from ApplicationWindows.TemplatePickingUi import Ui_Dialog
 
 
 class TemplateConfigurationScene(QGraphicsScene):
+    first_point_added = pyqtSignal()
+    second_point_added = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.upper_left_selected = False
@@ -51,9 +54,6 @@ class TemplateConfigurationScene(QGraphicsScene):
         self.upper_left_selected = False
         self.bottom_right_selected = False
         self.first_mouse_move = True
-        msg_box = QMessageBox()
-        msg_box.setText("Selecione o ponto superior esquerdo do template")
-        msg_box.exec()
 
     def mouseMoveEvent(self, event):
         self.mouse_hori_line.setLine(
@@ -81,10 +81,7 @@ class TemplateConfigurationScene(QGraphicsScene):
             self.line_left.setPen(self.pen)
             self.addItem(self.line_top)
             self.addItem(self.line_left)
-
-            msg_box = QMessageBox()
-            msg_box.setText("Selecione o ponto inferior direito do template")
-            msg_box.exec()
+            self.first_point_added.emit()
 
         elif not self.bottom_right_selected:
             self.bottom_right_selected = True
@@ -101,17 +98,17 @@ class TemplateConfigurationScene(QGraphicsScene):
             self.addItem(self.line_right)
             self.removeItem(self.mouse_vert_line)
             self.removeItem(self.mouse_hori_line)
+            self.second_point_added.emit()
 
 
 class TemplatePicking(QDialog):
-    def __init__(self, window_name, parent=None):
+    def __init__(self, window_name, frames_stream, parent=None):
         super().__init__(parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.window_name = window_name
-        self.camera = self.parent().camera
-        self.frames_reader = self.camera.create_frames_reader().start()
+        self.frames_stream = frames_stream.start()
 
         self.setWindowTitle(self.window_name)
         self.closed_for_next_step = False
@@ -122,23 +119,36 @@ class TemplatePicking(QDialog):
         self.scene.addItem(self.pixmap)
         self.ui.graphics_view.setMouseTracking(True)
 
+        self.scene.first_point_added.connect(self.first_point_added)
+        self.scene.second_point_added.connect(self.second_point_added)
         self.ui.finish_push_button.clicked.connect(self.finish_push_button_clicked)
         self.ui.reset_push_button.clicked.connect(self.reset_push_button_clicked)
 
-        self.frames_processor_timer = QTimer()
-        self.frames_processor_timer.timeout.connect(
+        self.show_frame_timer = QTimer()
+        self.show_frame_timer.timeout.connect(
             self.show_frame)
-        self.frames_processor_timer.start(50)
+        self.show_frame_timer.start(50)
 
     def exec(self):
         self.show()
-        msg_box = QMessageBox()
-        msg_box.setText("Selecione o ponto superior esquerdo do template")
-        msg_box.show()
+        self.show_first_point_message()
+        print("kkkkk")
         super().exec()
 
+    @staticmethod
+    def show_first_point_message():
+        msg_box = QMessageBox()
+        msg_box.setText("Selecione o ponto superior esquerdo do template")
+        msg_box.exec()
+
+    @staticmethod
+    def show_second_point_message():
+        msg_box = QMessageBox()
+        msg_box.setText("Selecione o ponto inferior direito do template")
+        msg_box.exec()
+
     def show_frame(self):
-        grabbed, frame = self.frames_reader.read()
+        grabbed, frame = self.frames_stream.read()
         if grabbed:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             height, width, _ = frame.shape
@@ -155,10 +165,20 @@ class TemplatePicking(QDialog):
                int(self.scene.upper_left.y()):int(self.scene.bottom_right.y()),
                int(self.scene.upper_left.x()):int(self.scene.bottom_right.x())]
 
+    def first_point_added(self):
+        self.show_second_point_message()
+
+    def second_point_added(self):
+        self.ui.finish_push_button.setEnabled(True)
+
     def reset_push_button_clicked(self):
         self.scene.reset()
+        self.show_first_point_message()
+        self.ui.finish_push_button.setDisabled(True)
 
     def finish_push_button_clicked(self):
-        grabbed, self.frame = self.frames_reader.read()
+        grabbed, self.frame = self.frames_stream.read()
+        self.show_frame_timer.stop()
+        self.frames_stream.stop()
         self.closed_for_next_step = True
         self.close()
