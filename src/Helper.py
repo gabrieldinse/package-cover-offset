@@ -70,9 +70,6 @@ class WorkerQueue:
                 self.queue.task_done()  # Para o caso de multithreading
 
 
-class CameraEvents(pydispatch.Dispatcher):
-    _events_ = ['new_frame']
-
 class VideoInfoEvents(pydispatch.Dispatcher):
     _events_ =  ['new_product', 'new_frame']
 
@@ -83,7 +80,7 @@ class MainWindowEvents(pydispatch.Dispatcher):
                 'turn_on_camera', 'turn_off_camera']
 
 
-def datetime_now():
+def datetime_now_str():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def circular_kernel(size):

@@ -15,20 +15,20 @@ from PyQt5.QtGui import QImage, QPixmap
 import cv2
 
 # Local application imports
-from Visao.Camera import Camera
+from Visao.SyncedVideoStream import SyncedVideoStream
 from Helper import SegmentationInfo, circular_kernel
 from ApplicationWindows.SegmentationSettingsUi import Ui_Dialog
 
 
 class SegmentationSettings(QDialog):
-    def __init__(self, window_name, frames_stream,
+    def __init__(self, window_name, frames_reader,
                  segmentation_info=None, parent=None):
         super().__init__(parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.window_name = window_name
-        self.frames_stream = frames_stream.start()
+        self.frames_reader = frames_reader
 
         self.setWindowTitle(self.window_name)
         self.closed_for_next_step = False
@@ -98,8 +98,11 @@ class SegmentationSettings(QDialog):
         self.ui.gaussian_kernel_spin_box.setValue(self.gaussian_kernel_size)
 
     def segment_and_show_frame(self):
-        grabbed, frame = self.frames_stream.read()
-        if grabbed:
+        try:
+            frame = self.frames_reader.read()
+        except FrameReadingError:
+            raise
+        else:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             # Filtro gaussiano para suavizar ruidos na imagem
@@ -168,6 +171,6 @@ class SegmentationSettings(QDialog):
 
     def next_push_button_clicked(self):
         self.show_frame_timer.stop()
-        self.frames_stream.stop()
+        self.frames_reader.stop()
         self.closed_for_next_step = True
         self.close()

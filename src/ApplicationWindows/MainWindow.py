@@ -13,7 +13,7 @@ import time
 from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
                              QMainWindow, QInputDialog, QLineEdit)
 from PyQt5.QtCore import QDir, Qt, QTimer
-from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtGui import QImage, QPixmap, QColor
 from PyQt5 import uic
 import cv2
 
@@ -23,19 +23,20 @@ from ApplicationWindows.TemplatePicking import TemplatePicking
 from Helper import (WorkerQueue, MainWindowEvents, ProductType,
                     ProductTypeName)
 from ApplicationWindows.MainWindowUi import Ui_MainWindow
-from Visao.Camera import Camera
+from Visao.SyncedVideoStream import SyncedVideoStream
+from Errors import FrameReadingError
 
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, frames_stream):
+    def __init__(self, frames_reader):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
         self.events = MainWindowEvents()
 
-        self.frames_stream = frames_stream
+        self.frames_reader = frames_reader
         self.products_adder = WorkerQueue(self.add_product)
         Thread(target=self.products_adder.run, args=()).start()
 
@@ -77,8 +78,11 @@ class MainWindow(QMainWindow):
         pass
 
     def show_frame(self):
-        grabbed, frame = self.frames_stream.read()
-        if grabbed:
+        try:
+            frame = self.frames_reader.read()
+        except FrameReadingError:
+            raise
+        else:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             height, width, _ = frame.shape
             bytes_per_line = 3 * width
@@ -87,7 +91,6 @@ class MainWindow(QMainWindow):
                                bytes_per_line, QImage.Format_RGB888)
             gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
             self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
-
 
     def add_product(self, product_info):
         # Mostra na gui
@@ -122,7 +125,6 @@ class MainWindow(QMainWindow):
 
         self.finish_vision()
         self.show_frame_timer.stop()
-        self.frames_stream.stop()
         self.events.emit("close")
         event.accept()
 
@@ -150,14 +152,14 @@ class MainWindow(QMainWindow):
             QLineEdit.Normal, "")
         if ok and product_name:
             segmentation_dialog = SegmentationSettings(
-                product_name, self.frames_stream.copy(), parent=self)
+                product_name, self.frames_reader.copy(), parent=self)
             segmentation_dialog.exec()
 
             if segmentation_dialog.closed_for_next_step:
                 segmentation_info = segmentation_dialog.get_segmentation_info()
 
                 template_dialog = TemplatePicking(
-                    product_name, self.frames_stream.copy(), parent=self)
+                    product_name, self.frames_reader.copy(), parent=self)
                 template_dialog.exec()
 
                 if template_dialog.closed_for_next_step:
@@ -180,7 +182,6 @@ class MainWindow(QMainWindow):
         self.ui.turn_on_camera_push_button.setDisabled(True)
         self.ui.turn_off_camera_push_button.setEnabled(True)
         self.ui.register_product_push_button.setEnabled(True)
-        self.frames_stream.start()
         self.show_frame_timer.start(50)
 
     def turn_off_camera_push_button_clicked(self):
@@ -191,4 +192,11 @@ class MainWindow(QMainWindow):
         self.ui.edit_product_push_button.setDisabled(True)
         self.ui.test_push_button.setDisabled(True)
         self.show_frame_timer.stop()
-        self.frames_stream.stop()
+        white_image = QImage(
+            470, 470 / self.frames_reader.aspect_ratio, QImage.Format_RGB888)
+        white_image.fill(QColor(Qt.white).rgb())
+        self.pixmap.setPixmap(QPixmap.fromImage(white_image))
+
+
+
+

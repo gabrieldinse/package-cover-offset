@@ -12,14 +12,14 @@ import cv2
 
 # Local application imports
 from Helper import WorkerQueue, VideoInfoEvents, ProductType
-from Visao.Camera import Camera
+from Visao.SyncedVideoStream import SyncedVideoStream
 
 
 class VideoInfoExtractor:
     def __init__(self, application):
         self.sentinel = object()
         self.events = VideoInfoEvents()
-        self.camera = None
+        self.frames_reader = None
 
         self.running = False
 
@@ -126,20 +126,20 @@ class VideoInfoExtractor:
             self.capture_mask, self.capture_mask,
             mask=self.segment_mask)
 
+    def start(self):
+        if not self.running:
+            self.running = True
+            self.thread = Thread(target=self.run, args=())
+            self.thread.start()
+
     def stop(self):
-        self.products.put(self.sentinel)
-        self.frames.put(self.sentinel)
-        self.camera.turn_off()
-        self.running = False
+        if self.running:
+            self.running = False
+            self.thread.join()
 
     def run(self):
-        self.running = True
-        self.camera = Camera()
-
-        while True:
-            if not self.running:
-                return
-
+        while self.running:
+            pass
             # self.grabbed, self.frame = self.camera.read()
             # if self.grabbed:
             #     self.segment_frame()

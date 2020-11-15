@@ -16,7 +16,7 @@ from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 import cv2
 
 # Local application imports
-from Visao.Camera import Camera
+from Visao.SyncedVideoStream import SyncedVideoStream
 from ApplicationWindows.TemplatePickingUi import Ui_Dialog
 
 
@@ -24,7 +24,7 @@ class TemplateConfigurationScene(QGraphicsScene):
     first_point_added = pyqtSignal()
     second_point_added = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, camera_width):
         super().__init__()
         self.upper_left_selected = False
         self.bottom_right_selected = False
@@ -39,7 +39,7 @@ class TemplateConfigurationScene(QGraphicsScene):
         self.pen.setWidth(2)
 
         self.first_mouse_move = True
-        self.scale = 640 / 470
+        self.scale = camera_width / 470
 
         self.mouse_hori_line = QGraphicsLineItem(0, 0, 0, 0)
         self.mouse_vert_line = QGraphicsLineItem(0, 0, 0, 0)
@@ -102,18 +102,18 @@ class TemplateConfigurationScene(QGraphicsScene):
 
 
 class TemplatePicking(QDialog):
-    def __init__(self, window_name, frames_stream, parent=None):
+    def __init__(self, window_name, frames_reader, parent=None):
         super().__init__(parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.window_name = window_name
-        self.frames_stream = frames_stream.start()
+        self.frames_reader = frames_reader
 
         self.setWindowTitle(self.window_name)
         self.closed_for_next_step = False
 
-        self.scene = TemplateConfigurationScene()
+        self.scene = TemplateConfigurationScene(self.frames_reader.resolution[0])
         self.ui.graphics_view.setScene(self.scene)
         self.pixmap = QGraphicsPixmapItem()
         self.scene.addItem(self.pixmap)
@@ -132,7 +132,6 @@ class TemplatePicking(QDialog):
     def exec(self):
         self.show()
         self.show_first_point_message()
-        print("kkkkk")
         super().exec()
 
     @staticmethod
@@ -148,8 +147,11 @@ class TemplatePicking(QDialog):
         msg_box.exec()
 
     def show_frame(self):
-        grabbed, frame = self.frames_stream.read()
-        if grabbed:
+        try:
+            frame = self.frames_reader.read()
+        except FrameReadingError:
+            raise
+        else:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             height, width, _ = frame.shape
             bytes_per_line = 3 * width
@@ -177,8 +179,11 @@ class TemplatePicking(QDialog):
         self.ui.finish_push_button.setDisabled(True)
 
     def finish_push_button_clicked(self):
-        grabbed, self.frame = self.frames_stream.read()
-        self.show_frame_timer.stop()
-        self.frames_stream.stop()
-        self.closed_for_next_step = True
-        self.close()
+        try:
+            self.frame = self.frames_reader.read()
+        except FrameReadingError:
+            raise
+        else:
+            self.show_frame_timer.stop()
+            self.closed_for_next_step = True
+            self.close()

@@ -452,6 +452,20 @@ class Ui_MainWindow(object):
 "border-width : 2px;\n"
 "border-style:solid;")
         self.turn_off_camera_push_button.setObjectName("turn_off_camera_push_button")
+        self.state_label_2 = QtWidgets.QLabel(self.centralwidget)
+        self.state_label_2.setGeometry(QtCore.QRect(110, 440, 69, 22))
+        font = QtGui.QFont()
+        font.setPointSize(11)
+        font.setBold(True)
+        font.setWeight(75)
+        self.state_label_2.setFont(font)
+        self.state_label_2.setStyleSheet("background-color: rgb(235, 235, 235);\n"
+"color: rgb(50, 50, 50);\n"
+"border-color: rgb(100, 100, 100);\n"
+"border-width : 2px;\n"
+"border-style:solid;")
+        self.state_label_2.setAlignment(QtCore.Qt.AlignCenter)
+        self.state_label_2.setObjectName("state_label_2")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 21))
@@ -485,6 +499,7 @@ class Ui_MainWindow(object):
         self.turn_on_camera_push_button.setText(_translate("MainWindow", "Ligar"))
         self.label_14.setText(_translate("MainWindow", "Câmera"))
         self.turn_off_camera_push_button.setText(_translate("MainWindow", "Desligar"))
+        self.state_label_2.setText(_translate("MainWindow", "OFF"))
 
 
 if __name__ == "__main__":
