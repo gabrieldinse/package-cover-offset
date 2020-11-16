@@ -119,6 +119,9 @@ border-style:solid;</string>
    </property>
   </widget>
   <widget class="QPushButton" name="finish_push_button">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>310</x>

@@ -74,11 +74,13 @@ class VideoInfoEvents(pydispatch.Dispatcher):
     _events_ =  ['new_product', 'new_frame']
 
 class MainWindowEvents(pydispatch.Dispatcher):
-    _events_ = ['vision_system_start', 'vision_system_stop', 'new_product_type',
-                'product_type_edited']
+    _events_ = ['vision_system_start', 'vision_system_stop',
+                'new_product_type', 'product_type_edited',
+                'close',
+                'turn_on_camera', 'turn_off_camera']
 
 
-def datetime_now():
+def datetime_now_str():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def circular_kernel(size):
