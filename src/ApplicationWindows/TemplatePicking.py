@@ -16,7 +16,7 @@ from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 import cv2
 
 # Local application imports
-from Visao.SyncedVideoStream import SyncedVideoStream
+from Vision.SyncedVideoStream import SyncedVideoStream
 from ApplicationWindows.TemplatePickingUi import Ui_Dialog
 
 
@@ -179,11 +179,11 @@ class TemplatePicking(QDialog):
         self.ui.finish_push_button.setDisabled(True)
 
     def finish_push_button_clicked(self):
+        self.show_frame_timer.stop()
         try:
             self.frame = self.frames_reader.read()
         except FrameReadingError:
             raise
         else:
-            self.show_frame_timer.stop()
             self.closed_for_next_step = True
             self.close()

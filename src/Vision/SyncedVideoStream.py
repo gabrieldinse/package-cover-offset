@@ -11,12 +11,12 @@ from contextlib import contextmanager
 import cv2
 
 # Local application imports
-from Helper import CameraEvents
-from Errors import *
+from Errors import (VideoNotOpenedError, VideoNotInitializedError,
+                    FrameReadingError)
 
 
 @contextmanager
-def acquire_timeout(lock, timeout=-1):
+def acquire_timeout(lock, timeout):
     result = lock.acquire(timeout=timeout)
     yield result
     if result:
@@ -90,6 +90,7 @@ class SyncedVideoStream:
         self.stream = None
         self.initializd = False
         self.opened = False
+        self.lock = threading.Lock()
         self.frames_readers = []
 
     @classmethod
@@ -117,12 +118,10 @@ class SyncedVideoStream:
             raise VideoNotInitializedError()
 
     def close(self):
-        with self.frames_reading_lock:
-            if self.opened:
-                self.opened = False
-                self.frames_readers.clear()
-                self.stream.close()
-                self.thread.join()
+        if self.opened:
+            self.opened = False
+            self.stream.close()
+            self.thread.join()
 
     def run(self):
         while self.opened:
@@ -131,10 +130,11 @@ class SyncedVideoStream:
             except FrameReadingError:
                 raise
             else:
-                with self.frames_reading_lock.wait(timeout=0.25):
-                    for frames_reader in self.frames_readers:
-                        frames_reader.frame = frame.copy()
-                        frames_reader.can_get_frame.set()
+                with acquire_timeout(self.lock, timeout=0.25) as acquired:
+                    if acquired:
+                        for frames_reader in self.frames_readers:
+                            frames_reader.frame = frame.copy()
+                            frames_reader.can_get_frame.set()
 
     @property
     def aspect_ratio(self):
@@ -159,11 +159,13 @@ class FramesReader:
     def copy(self):
         return self.video_stream.create_frames_reader()
 
-    def read(self, timeout=0.25):
+    def read(self, timeout=0.1):
         if not self.video_stream.opened:
             raise VideoNotOpenedError()
+        if not self.can_get_frame.wait(timeout=timeout):
+            raise FrameReadingError()
 
-        with acquire_lock(self.video_stream.lock, timeout=timeout) as acquired:
+        with acquire_timeout(self.video_stream.lock, timeout) as acquired:
             if acquired:
                 self.can_get_frame.clear()
                 return self.frame

@@ -11,13 +11,12 @@ import subprocess
 # Third party modules
 from PyQt5.QtWidgets import QApplication
 
-
 # Local application imports
 from Data.DataStorager import DataStorager
 from ApplicationWindows.MainWindow import MainWindow
-from Visao.VideoInfoExtractor import VideoInfoExtractor
+from Vision.VideoInfoExtractor import VideoInfoExtractor
 from Helper import WorkerQueue, ProductType, ProductInfo
-from Visao.SyncedVideoStream import SyncedVideoStream, FramesReader
+from Vision.SyncedVideoStream import SyncedVideoStream, FramesReader
 
 
 class Application:

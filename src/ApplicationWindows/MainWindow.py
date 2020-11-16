@@ -4,8 +4,7 @@
 # Made with PyCharm
 
 # Standard Library
-from queue import Queue
-from threading import Thread
+import threading
 from collections.abc import Iterable
 import time
 
@@ -20,10 +19,10 @@ import cv2
 # Local application imports
 from ApplicationWindows.SegmentationSettings import SegmentationSettings
 from ApplicationWindows.TemplatePicking import TemplatePicking
-from Helper import (WorkerQueue, MainWindowEvents, ProductType,
-                    ProductTypeName)
+from Helper import WorkerQueue, ProductType, ProductTypeName
+from Events import MainWindowEvents
 from ApplicationWindows.MainWindowUi import Ui_MainWindow
-from Visao.SyncedVideoStream import SyncedVideoStream
+from Vision.SyncedVideoStream import SyncedVideoStream
 from Errors import FrameReadingError
 
 
@@ -38,7 +37,7 @@ class MainWindow(QMainWindow):
 
         self.frames_reader = frames_reader
         self.products_adder = WorkerQueue(self.add_product)
-        Thread(target=self.products_adder.run, args=()).start()
+        threading.Thread(target=self.products_adder.run, args=()).start()
 
         # Visualizacao dos frames no framework do Qt
         self.scene = QGraphicsScene()
@@ -196,6 +195,7 @@ class MainWindow(QMainWindow):
             470, 470 / self.frames_reader.aspect_ratio, QImage.Format_RGB888)
         white_image.fill(QColor(Qt.white).rgb())
         self.pixmap.setPixmap(QPixmap.fromImage(white_image))
+
 
 
 

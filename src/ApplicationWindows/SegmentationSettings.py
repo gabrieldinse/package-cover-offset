@@ -15,7 +15,7 @@ from PyQt5.QtGui import QImage, QPixmap
 import cv2
 
 # Local application imports
-from Visao.SyncedVideoStream import SyncedVideoStream
+from Vision.SyncedVideoStream import SyncedVideoStream
 from Helper import SegmentationInfo, circular_kernel
 from ApplicationWindows.SegmentationSettingsUi import Ui_Dialog
 
@@ -171,6 +171,5 @@ class SegmentationSettings(QDialog):
 
     def next_push_button_clicked(self):
         self.show_frame_timer.stop()
-        self.frames_reader.stop()
         self.closed_for_next_step = True
         self.close()

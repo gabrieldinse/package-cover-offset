@@ -11,8 +11,9 @@ from threading import Thread
 import cv2
 
 # Local application imports
-from Helper import WorkerQueue, VideoInfoEvents, ProductType
-from Visao.SyncedVideoStream import SyncedVideoStream
+from Helper import WorkerQueue, ProductType
+from Events import VideoInfoEvents
+from Vision.SyncedVideoStream import SyncedVideoStream
 
 
 class VideoInfoExtractor:
