@@ -14,13 +14,13 @@ import cv2
 from Helper import WorkerQueue, ProductType
 from Events import VideoInfoEvents
 from Vision.SyncedVideoStream import SyncedVideoStream
+from Errors import FrameReadingError
 
 
 class VideoInfoExtractor:
-    def __init__(self, application):
-        self.sentinel = object()
+    def __init__(self, frames_reader):
         self.events = VideoInfoEvents()
-        self.frames_reader = None
+        self.frames_reader = frames_reader
 
         self.running = False
 
@@ -138,9 +138,63 @@ class VideoInfoExtractor:
             self.running = False
             self.thread.join()
 
+    def get_convex_package(self):
+        gray_frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2GRAY)
+        blurred_gray_frame = cv2.GaussianBlur(
+            gray_frame,
+            (self.gaussian_kernel_size, self.gaussian_kernel_size), 0)
+
+        self.calculate_canny_threshold(blurred_gray_frame)
+        canny_edges = cv2.Canny(
+            blurred_gray_frame, self.lower_canny, self.upper_canny)
+        self.convex_hull = convex_hull_image(canny_edges)
+
+    def calculate_package_centroid(self):
+        count = (self.convex_hull == 1).sum()
+        self.x_center, _ = np.argwhere(self.convex_hull == 1).sum(0) / count
+
+    def calculate_cover_centroid(self):
+        found = None
+        method = eval('cv2.TM_SQDIFF_NORMED')
+        for scale in np.linspace(0.8, 1.2, 9):
+            for orientation in ["0", "180"]:
+                resized = imutils.resize(template,
+                                         width=int(template.shape[1] * scale))
+                # r = template.shape[1] / float(resized.shape[1])
+                h, w = resized.shape
+                if orientation == "180":
+                    center = (w / 2, h / 2)
+                    M = cv2.getRotationMatrix2D(center, 180, 1.0)
+                    resized = cv2.warpAffine(resized, M, (h, w))
+
+                method = eval(meth)
+
+                res = cv2.matchTemplate(frame, resized, method)
+                min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+
+                if found is None or min_val < found[0]:
+                    found = (min_val, min_loc, scale, max_loc)
+
+                if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
+                    top_left = min_loc
+                else:
+                    top_left = max_loc
+                bottom_right = (top_left[0] + w, top_left[1] + h)
+        h, w = template.shape
+        centroide = (found[1][0] + found[2] * w / 2, found[1][1] + found[2] * h / 2)
+
     def run(self):
         while self.running:
-            pass
+            try:
+                self.frame = self.frames_reader.read()
+            except FrameReadingError:
+                pass
+            else:
+                self.get_convex_package()  # Convex hull
+                self.calculate_package_centroid()
+                self.calculate_cover_centroid()  # Template matching
+                self.calculate_offset()
+
             # self.grabbed, self.frame = self.camera.read()
             # if self.grabbed:
             #     self.segment_frame()

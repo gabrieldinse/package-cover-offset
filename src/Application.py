@@ -25,7 +25,7 @@ class Application:
         self.camera = SyncedVideoStream().from_camera(1)
         self.data_storager = DataStorager()
         self.window = MainWindow(self.camera.create_frames_reader())
-        self.vision_system = VideoInfoExtractor(self)
+        self.vision_system = VideoInfoExtractor(self.camera.create_frames_reader())
 
         # A aplicação lida com os eventos dos sistemas (observer)
         self.vision_system.bind(new_product=self.register_product)
@@ -42,6 +42,7 @@ class Application:
     def register_product(self, product_info : ProductInfo):
         # self.database.register_product(product_info)
         self.window.products_adder.put(product_info)
+        # Enviar pro arduino
 
     def register_product_type(self, product_type : ProductType):
         pass
