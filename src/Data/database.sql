@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS `producao` (
   `Id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `IniciadaEm` datetime DEFAULT NULL,
   PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- Data exporting was unselected.
 
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `produto` (
   `ProduzidoEm` datetime DEFAULT NULL,
   `TemTampa` tinyint(4) DEFAULT NULL,
   PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- Data exporting was unselected.
 
@@ -64,14 +64,11 @@ CREATE TABLE IF NOT EXISTS `produto_producao` (
 CREATE TABLE IF NOT EXISTS `tipo_produto` (
   `Id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `NomeProduto` varchar(50) NOT NULL DEFAULT '0',
-  `HueMin` tinyint(3) unsigned DEFAULT NULL,
-  `HueMax` tinyint(3) unsigned DEFAULT NULL,
-  `SaturationMax` tinyint(3) unsigned DEFAULT NULL,
-  `SaturationMin` tinyint(3) unsigned DEFAULT NULL,
-  `ValueMax` tinyint(3) unsigned DEFAULT NULL,
-  `ValueMin` tinyint(3) unsigned DEFAULT NULL,
+  `LowerCanny` int(10) unsigned NOT NULL DEFAULT 0,
+  `UpperCanny` int(10) unsigned NOT NULL DEFAULT 0,
+  `FiltroGaussiano` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
 
 -- Data exporting was unselected.
 
@@ -1390,7 +1387,7 @@ CREATE TABLE IF NOT EXISTS `db` (
   `Delete_history_priv` enum('N','Y') CHARACTER SET utf8 NOT NULL DEFAULT 'N',
   PRIMARY KEY (`Host`,`Db`,`User`),
   KEY `User` (`User`)
-) ENGINE=Aria DEFAULT CHARSET=utf8 COLLATE=utf8_bin PAGE_CHECKSUM=1 TRANSACTIONAL=1 COMMENT='Data privileges';
+) ENGINE=Aria DEFAULT CHARSET=utf8 COLLATE=utf8_bin PAGE_CHECKSUM=1 TRANSACTIONAL=1 COMMENT='Database privileges';
 
 -- Data exporting was unselected.
 
