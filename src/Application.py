@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QApplication
 from Data.DataStorager import DataStorager
 from ApplicationWindows.MainWindow import MainWindow
 from Vision.VideoInfoExtractor import VideoInfoExtractor
-from Helper import WorkerQueue, ProductType, ProductInfo
+from Helper import WorkerQueue, ProductType, ProductInfo, SegmentationInfo
 from Vision.SyncedVideoStream import SyncedVideoStream, FramesReader
 
 
@@ -24,12 +24,17 @@ class Application:
         self.application = QApplication(sys.argv)
         self.camera = SyncedVideoStream().from_camera(1)
         self.data_storager = DataStorager()
+        self.data_storager.open_database()
         self.window = MainWindow(self.camera.create_frames_reader())
         self.vision_system = VideoInfoExtractor(self.camera.create_frames_reader())
 
+        # Configurações iniciais
+        self.window.set_product_types_list(
+            self.data_storager.get_product_types_names())
+
         # A aplicação lida com os eventos dos sistemas (observer)
-        self.vision_system.bind(new_product=self.register_product)
-        self.window.bind(new_product_type=self.register_product_type)
+        self.vision_system.bind(new_product=self.add_product)
+        self.window.bind(new_product_type=self.add_product_type)
         self.window.bind(product_type_edited=self.edit_product_type)
         self.window.bind(vision_system_start=self.start_vision_system)
         self.window.bind(vision_system_stop=self.stop_vision_system)
@@ -39,14 +44,16 @@ class Application:
 
         self.running = False
 
-    def register_product(self, product_info : ProductInfo):
-        # self.database.register_product(product_info)
+    def add_product(self, product_info : ProductInfo):
+        # Registrar no banco de dados
         self.window.products_adder.put(product_info)
         # Enviar pro arduino
 
-    def register_product_type(self, product_type : ProductType):
-        pass
-        # product_type_id = self.data_storager.register_product_type(product_type)
+    def add_product_type(self, product_type : ProductType):
+        product_type_id = self.data_storager.add_product_type(product_type)
+        self.window.set_product_types_list(
+            self.data_storager.get_product_types_names())
+        self.window.set_product_type(product_type_id)
 
     def load_product_type(self, product_type_id):
         pass
@@ -56,7 +63,8 @@ class Application:
     def edit_product_type(self, product_type_id, product_type):
         pass
 
-    def start_vision_system(self):
+    def start_vision_system(self, segmentation_info : SegmentationInfo):
+        # self.vision_system.start()
         pass
 
     def stop_vision_system(self):
@@ -75,6 +83,7 @@ class Application:
 
     def stop(self):
         self.camera.close()
+        self.data_storager.close_database()
         self.running = False
 
 

@@ -55,50 +55,56 @@ class TemplateConfigurationScene(QGraphicsScene):
         self.bottom_right_selected = False
         self.first_mouse_move = True
 
+    def is_mouse_on_scene(self, position):
+        return (position.x() < self.sceneRect().width() - self.pen.width()) \
+               and (position.y() < self.sceneRect().height() - self.pen.width())
+
     def mouseMoveEvent(self, event):
-        self.mouse_hori_line.setLine(
-            0, event.scenePos().y(), self.sceneRect().width() - self.pen.width(),
-            event.scenePos().y())
-        self.mouse_vert_line.setLine(
-            event.scenePos().x(), 0, event.scenePos().x(),
-            self.sceneRect().height() - self.pen.width())
-        if self.first_mouse_move:
-            self.first_mouse_move = False
-            self.addItem(self.mouse_hori_line)
-            self.addItem(self.mouse_vert_line)
+        if self.is_mouse_on_scene(event.scenePos()):
+            self.mouse_hori_line.setLine(
+                0, event.scenePos().y(), self.sceneRect().width() - self.pen.width(),
+                event.scenePos().y())
+            self.mouse_vert_line.setLine(
+                event.scenePos().x(), 0, event.scenePos().x(),
+                self.sceneRect().height() - self.pen.width())
+            if self.first_mouse_move:
+                self.first_mouse_move = False
+                self.addItem(self.mouse_hori_line)
+                self.addItem(self.mouse_vert_line)
 
     def mousePressEvent(self, event):
-        if not self.upper_left_selected:
-            self.upper_left_selected = True
-            self.upper_left = event.scenePos() * self.scale
-            self.line_top = QGraphicsLineItem(
-                0, event.scenePos().y(), self.sceneRect().width() - self.pen.width(),
-                event.scenePos().y())
-            self.line_left = QGraphicsLineItem(
-                event.scenePos().x(), 0, event.scenePos().x(),
-                self.sceneRect().height() - self.pen.width())
-            self.line_top.setPen(self.pen)
-            self.line_left.setPen(self.pen)
-            self.addItem(self.line_top)
-            self.addItem(self.line_left)
-            self.first_point_added.emit()
+        if self.is_mouse_on_scene(event.scenePos()):
+            if not self.upper_left_selected:
+                self.upper_left_selected = True
+                self.upper_left = event.scenePos() * self.scale
+                self.line_top = QGraphicsLineItem(
+                    0, event.scenePos().y(), self.sceneRect().width() - self.pen.width(),
+                    event.scenePos().y())
+                self.line_left = QGraphicsLineItem(
+                    event.scenePos().x(), 0, event.scenePos().x(),
+                    self.sceneRect().height() - self.pen.width())
+                self.line_top.setPen(self.pen)
+                self.line_left.setPen(self.pen)
+                self.addItem(self.line_top)
+                self.addItem(self.line_left)
+                self.first_point_added.emit()
 
-        elif not self.bottom_right_selected:
-            self.bottom_right_selected = True
-            self.bottom_right = event.scenePos() * self.scale
-            self.line_bot = QGraphicsLineItem(
-                0, event.scenePos().y(), self.sceneRect().width() - self.pen.width(),
-                event.scenePos().y())
-            self.line_right = QGraphicsLineItem(
-                event.scenePos().x(), 0, event.scenePos().x(),
-                self.sceneRect().height() - self.pen.width())
-            self.line_bot.setPen(self.pen)
-            self.line_right.setPen(self.pen)
-            self.addItem(self.line_bot)
-            self.addItem(self.line_right)
-            self.removeItem(self.mouse_vert_line)
-            self.removeItem(self.mouse_hori_line)
-            self.second_point_added.emit()
+            elif not self.bottom_right_selected:
+                self.bottom_right_selected = True
+                self.bottom_right = event.scenePos() * self.scale
+                self.line_bot = QGraphicsLineItem(
+                    0, event.scenePos().y(), self.sceneRect().width() - self.pen.width(),
+                    event.scenePos().y())
+                self.line_right = QGraphicsLineItem(
+                    event.scenePos().x(), 0, event.scenePos().x(),
+                    self.sceneRect().height() - self.pen.width())
+                self.line_bot.setPen(self.pen)
+                self.line_right.setPen(self.pen)
+                self.addItem(self.line_bot)
+                self.addItem(self.line_right)
+                self.removeItem(self.mouse_vert_line)
+                self.removeItem(self.mouse_hori_line)
+                self.second_point_added.emit()
 
 
 class TemplatePicking(QDialog):

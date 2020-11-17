@@ -138,6 +138,26 @@ class VideoInfoExtractor:
             self.running = False
             self.thread.join()
 
+    def run(self):
+        while self.running:
+            try:
+                self.frame = self.frames_reader.read()
+            except FrameReadingError:
+                pass
+            else:
+                self.get_convex_package()  # Convex hull
+                self.calculate_package_centroid()
+                self.calculate_cover_centroid()  # Template matching
+                self.calculate_offset()
+
+            # self.grabbed, self.frame = self.camera.read()
+            # if self.grabbed:
+            #     self.segment_frame()
+            #     self.events.emit('new_frame', self.frame, self.mask)
+            #     self.get_centroids()
+            #     self.verify_frame()
+            #     self.events.emit('new_product', self.last_product_info)
+
     def get_convex_package(self):
         gray_frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2GRAY)
         blurred_gray_frame = cv2.GaussianBlur(
@@ -182,23 +202,3 @@ class VideoInfoExtractor:
                 bottom_right = (top_left[0] + w, top_left[1] + h)
         h, w = template.shape
         centroide = (found[1][0] + found[2] * w / 2, found[1][1] + found[2] * h / 2)
-
-    def run(self):
-        while self.running:
-            try:
-                self.frame = self.frames_reader.read()
-            except FrameReadingError:
-                pass
-            else:
-                self.get_convex_package()  # Convex hull
-                self.calculate_package_centroid()
-                self.calculate_cover_centroid()  # Template matching
-                self.calculate_offset()
-
-            # self.grabbed, self.frame = self.camera.read()
-            # if self.grabbed:
-            #     self.segment_frame()
-            #     self.events.emit('new_frame', self.frame, self.mask)
-            #     self.get_centroids()
-            #     self.verify_frame()
-            #     self.events.emit('new_product', self.last_product_info)

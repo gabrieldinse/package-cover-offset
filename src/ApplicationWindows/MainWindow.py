@@ -5,7 +5,7 @@
 
 # Standard Library
 import threading
-from collections.abc import Iterable
+from typing import Sequence
 import time
 
 # Third party modules
@@ -70,11 +70,19 @@ class MainWindow(QMainWindow):
     def bind(self, **kwargs):
         self.events.bind(**kwargs)
 
-    def finish_vision(self):
-        self.products_adder.finish_works()
+    def set_product_types_list(self, product_type_names: Sequence[ProductTypeName]):
+        self.ui.product_type_combo_box.setDisabled(True)
+        self.ui.product_type_combo_box.clear()
+        for product_type in product_type_names:
+            self.ui.product_type_combo_box.addItem(
+                f"[{product_type.id:05d}] {product_type.name}", product_type.id)
+        if self.ui.product_type_combo_box.count():
+            self.ui.product_type_combo_box.setEnabled(True)
 
-    def load_product_types_to_list(self, database_product_types):
-        pass
+    def set_product_type(self, product_type_id):
+        for i in range(self.ui.product_type_combo_box.count()):
+            if self.ui.product_type_combo_box.itemData(i) == product_type_id:
+                self.ui.product_type_combo_box.setCurrentIndex(i)
 
     def show_frame(self):
         try:
@@ -95,13 +103,6 @@ class MainWindow(QMainWindow):
         # Mostra na gui
         pass
 
-    def add_product_types_to_list(self, items):
-        self.ui.product_type_combo_box.setDisabled(True)
-        if isinstance(items, DatabaseProductType):
-            pass
-        elif isinstance(items, Iterable):
-            pass
-
     def update_ui_oranges_info(self):
         # Ultima laranja
         formatted_diameter_text = '{:.2f}mm'.format(
@@ -120,9 +121,7 @@ class MainWindow(QMainWindow):
             str(self.data_writer.quantity))
 
     def closeEvent(self, event):
-        """ Antes de encerrar o programa, salva os arquivos. """
-
-        self.finish_vision()
+        self.products_adder.finish_works()
         self.show_frame_timer.stop()
         self.events.emit("close")
         event.accept()
@@ -146,10 +145,10 @@ class MainWindow(QMainWindow):
             'color: rgb(255, 0, 0);')
 
     def register_product_push_button_clicked(self):
-        product_name, ok = QInputDialog().getText(
+        product_name, ok_clicked = QInputDialog().getText(
             self, "Nome do produto", "Nome do produto",
             QLineEdit.Normal, "")
-        if ok and product_name:
+        if ok_clicked and product_name:
             segmentation_dialog = SegmentationSettings(
                 product_name, self.frames_reader.copy(), parent=self)
             segmentation_dialog.exec()
@@ -167,8 +166,8 @@ class MainWindow(QMainWindow):
                         "new_product_type", ProductType(product_name, segmentation_info,
                                                         template))
 
-    def product_type_combo_box_index_changed(self):
-        pass
+    def product_type_combo_box_index_changed(self, index):
+        product_type_id = self.ui.product_type_combo_box.itemData(index)
 
     def edit_product_push_button_clicked(self):
         pass

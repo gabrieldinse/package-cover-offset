@@ -216,6 +216,7 @@ class Ui_MainWindow(object):
         spacerItem2 = QtWidgets.QSpacerItem(20, 100, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_20.addItem(spacerItem2)
         self.product_type_combo_box = QtWidgets.QComboBox(self.centralwidget)
+        self.product_type_combo_box.setEnabled(False)
         self.product_type_combo_box.setGeometry(QtCore.QRect(100, 100, 300, 20))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
