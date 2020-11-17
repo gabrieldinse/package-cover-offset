@@ -76,6 +76,7 @@ class Application:
         self.camera.close()
         self.running = False
 
+
 def main():
     subprocess.call([r'.\ApplicationWindows\generate_py_code_from_ui.bat'])
     app = Application()

@@ -22,14 +22,9 @@ class ProductInfo:
 
 @dataclass
 class SegmentationInfo:
-    min_h : int
-    max_h : int
-    min_s : int
-    max_s : int
-    min_v : int
-    max_v : int
+    lower_canny : int
+    upper_canny : int
     gaussian_filter_size : int
-    openning_filter_size : int
 
 
 @dataclass

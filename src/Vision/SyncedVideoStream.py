@@ -77,6 +77,16 @@ class CameraVideoOutput(VideoOutput):
         self.stream = cv2.VideoCapture(self.source_id, cv2.CAP_DSHOW)
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+        self.wait_until_is_opened()
+
+    def wait_until_is_opened(self):
+        while True:
+            try:
+                frame = self.read()
+            except FrameReadingError:
+                pass
+            else:
+                return
 
     def read(self):
         grabbed, frame = self.stream.read()
@@ -130,7 +140,7 @@ class SyncedVideoStream:
             except FrameReadingError:
                 raise
             else:
-                with acquire_timeout(self.lock, timeout=0.25) as acquired:
+                with acquire_timeout(self.lock, timeout=1.0) as acquired:
                     if acquired:
                         for frames_reader in self.frames_readers:
                             frames_reader.frame = frame.copy()
@@ -159,7 +169,7 @@ class FramesReader:
     def copy(self):
         return self.video_stream.create_frames_reader()
 
-    def read(self, timeout=0.1):
+    def read(self, timeout=1.0):
         if not self.video_stream.opened:
             raise VideoNotOpenedError()
         if not self.can_get_frame.wait(timeout=timeout):

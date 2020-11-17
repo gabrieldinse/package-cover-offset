@@ -13,6 +13,10 @@ from PyQt5 import uic
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QImage, QPixmap
 import cv2
+import numpy as np
+from skimage.morphology import convex_hull_image
+from skimage import img_as_ubyte
+import matplotlib.pyplot as plt
 
 # Local application imports
 from Vision.SyncedVideoStream import SyncedVideoStream
@@ -33,29 +37,28 @@ class SegmentationSettings(QDialog):
         self.setWindowTitle(self.window_name)
         self.closed_for_next_step = False
 
+        # Configurações dos QGraphicsView
         self.scene = QGraphicsScene()
         self.ui.graphics_view.setScene(self.scene)
         self.pixmap = QGraphicsPixmapItem()
         self.scene.addItem(self.pixmap)
 
-        # # Coneccao dos signals e slots
-        self.ui.min_h_slider.valueChanged.connect(
-            self.min_h_slider_value_changed)
-        self.ui.max_h_slider.valueChanged.connect(
-            self.max_h_slider_value_changed)
-        self.ui.min_s_slider.valueChanged.connect(
-            self.min_s_slider_value_changed)
-        self.ui.max_s_slider.valueChanged.connect(
-            self.max_s_slider_value_changed)
-        self.ui.min_v_slider.valueChanged.connect(
-            self.min_v_slider_value_changed)
-        self.ui.max_v_slider.valueChanged.connect(
-            self.max_v_slider_value_changed)
+        self.segmentation_scene = QGraphicsScene()
+        self.ui.segmentation_graphics_view.setScene(self.segmentation_scene)
+        self.segmentation_pixmap = QGraphicsPixmapItem()
+        self.segmentation_scene.addItem(self.segmentation_pixmap)
 
+        # # Coneccao dos signals e slots
+        self.ui.lower_canny_slider.valueChanged.connect(
+            self.lower_canny_slider_value_changed)
+        self.ui.upper_canny_slider.valueChanged.connect(
+            self.upper_canny_slider_value_changed)
         self.ui.gaussian_kernel_spin_box.valueChanged.connect(
             self.gaussian_kernel_spin_box_value_changed)
-        self.ui.opening_kernel_spin_box.valueChanged.connect(
-            self.opening_kernel_spin_box_value_changed)
+        self.ui.otsu_radio_button.toggled.connect(
+            self.otsu_radio_button_toggled)
+        self.ui.manual_radio_button.toggled.connect(
+            self.manual_radio_button_toggled)
 
         self.ui.next_push_button.clicked.connect(
             self.next_push_button_clicked)
@@ -69,32 +72,14 @@ class SegmentationSettings(QDialog):
 
     def initialize_ui_values(self, segmentation_info):
         if segmentation_info is None:
-            self.min_h = 0
-            self.max_h = 255
-            self.min_s = 0
-            self.max_s = 255
-            self.min_v = 0
-            self.max_v = 255
-            self.opening_kernel_size = 5
+            self.lower_canny = 0
+            self.upper_canny = 255
             self.gaussian_kernel_size = 5
         else:
-            self.min_h = segmentation_info.min_h
-            self.max_h = segmentation_info.max_h
-            self.min_s = segmentation_info.min_s
-            self.max_s = segmentation_info.max_s
-            self.min_v = segmentation_info.min_v
-            self.max_v = segmentation_info.max_v
-            self.opening_kernel_size = segmentation_info.opening_kernel_size
-            self.gaussian_kernel_size = segmentation_info.gaussian_kernel_size
+            pass
 
-        self.ui.min_h_slider.setValue(self.min_h)
-        self.ui.max_h_slider.setValue(self.max_h)
-        self.ui.min_s_slider.setValue(self.min_s)
-        self.ui.max_s_slider.setValue(self.max_s)
-        self.ui.min_v_slider.setValue(self.min_v)
-        self.ui.max_v_slider.setValue(self.max_v)
-        self.opening_kernel = circular_kernel(self.opening_kernel_size)
-        self.ui.opening_kernel_spin_box.setValue(self.opening_kernel_size)
+        self.ui.lower_canny_slider.setValue(self.lower_canny)
+        self.ui.upper_canny_slider.setValue(self.upper_canny)
         self.ui.gaussian_kernel_spin_box.setValue(self.gaussian_kernel_size)
 
     def segment_and_show_frame(self):
@@ -104,64 +89,60 @@ class SegmentationSettings(QDialog):
             raise
         else:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-            # Filtro gaussiano para suavizar ruidos na imagem
-            blur = cv2.GaussianBlur(frame, (self.gaussian_kernel_size,
-                                                    self.gaussian_kernel_size), 0)
-            hsv = cv2.cvtColor(blur, cv2.COLOR_RGB2HSV)
-
-            # Segmentacao de acordo com o invervalo de cores HSV
-            in_range_mask = cv2.inRange(
-                hsv, (self.min_h, self.min_s, self.min_v),
-                (self.max_h, self.max_s, self.max_v))
-            segment_mask = cv2.morphologyEx(in_range_mask, cv2.MORPH_OPEN,
-                                                 self.opening_kernel)
-            processed_frame = cv2.bitwise_and(frame, frame,
-                                                   mask=segment_mask)
             height, width, _ = frame.shape
             bytes_per_line = 3 * width
-            # Frame segmentado
-            gui_frame = QImage(processed_frame.data, width, height,
+
+            # Mostra o frame original
+            gui_frame = QImage(frame.data, width, height,
                                bytes_per_line, QImage.Format_RGB888)
             gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
             self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
 
+            # Segmentação por Canny e Convex hull
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+            blurred_gray_frame = cv2.GaussianBlur(
+                gray_frame,
+                (self.gaussian_kernel_size, self.gaussian_kernel_size), 0)
+
+            self.calculate_canny_threshold(blurred_gray_frame)
+            canny_edges = cv2.Canny(
+                blurred_gray_frame, self.lower_canny, self.upper_canny)
+            convex_hull = img_as_ubyte(convex_hull_image(canny_edges))
+
+            # Mostra o frame segmentado
+            segmented_gui_frame = QImage(
+                convex_hull.data, width, height, QImage.Format_Grayscale8)
+            segmented_gui_frame = segmented_gui_frame.scaled(
+                470, 470, Qt.KeepAspectRatio)
+            self.segmentation_pixmap.setPixmap(
+                QPixmap.fromImage(segmented_gui_frame))
+
+    def calculate_canny_threshold(self, gray_frame):
+        if self.ui.otsu_radio_button.isChecked():
+            self.upper_canny, thresh_image = cv2.threshold(
+                gray_frame, 0, 255,
+                cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            self.lower_canny = 0.5 * self.upper_canny
+
     def get_segmentation_info(self):
-        return SegmentationInfo(self.min_h, self.max_h, self.min_s,
-                                self.max_s, self.min_v, self.max_v,
-                                self.gaussian_kernel_size,
-                                self.opening_kernel_size)
-    
-    def min_h_slider_value_changed(self):
-        self.min_h = self.ui.min_h_slider.value()
-        self.ui.min_h_label.setText(str(self.min_h))
+        return SegmentationInfo(self.lower_canny, self.upper_canny,
+                                self.gaussian_kernel_size)
 
-    def max_h_slider_value_changed(self):
-        self.max_h = self.ui.max_h_slider.value()
-        self.ui.max_h_label.setText(str(self.max_h))
+    def otsu_radio_button_toggled(self):
+        self.ui.upper_canny_slider.setDisabled(True)
+        self.ui.lower_canny_slider.setDisabled(True)
 
-    def min_s_slider_value_changed(self):
-        self.min_s = self.ui.min_s_slider.value()
-        self.ui.min_s_label.setText(str(self.min_s))
+    def manual_radio_button_toggled(self):
+        self.ui.upper_canny_slider.setEnabled(True)
+        self.ui.lower_canny_slider.setEnabled(True)
 
-    def max_s_slider_value_changed(self):
-        self.max_s = self.ui.max_s_slider.value()
-        self.ui.max_s_label.setText(str(self.max_s))
+    def lower_canny_slider_value_changed(self):
+        self.lower_canny = self.ui.lower_canny_slider.value()
+        self.ui.lower_canny_label.setText(str(self.lower_canny))
 
-    def min_v_slider_value_changed(self):
-        self.min_v = self.ui.min_v_slider.value()
-        self.ui.min_v_label.setText(str(self.min_v))
-
-    def max_v_slider_value_changed(self):
-        self.max_v = self.ui.max_v_slider.value()
-        self.ui.max_v_label.setText(str(self.max_v))
-
-    def opening_kernel_spin_box_value_changed(self):
-        if self.ui.opening_kernel_spin_box.value() % 2 == 0:
-            self.ui.opening_kernel_spin_box.setValue(
-                self.ui.opening_kernel_spin_box.value() + 1)
-        self.opening_kernel_size = self.ui.opening_kernel_spin_box.value()
-        self.opening_kernel = circular_kernel(self.opening_kernel_size)
+    def upper_canny_slider_value_changed(self):
+        self.upper_canny = self.ui.upper_canny_slider.value()
+        self.ui.upper_canny_label.setText(str(self.upper_canny))
 
     def gaussian_kernel_spin_box_value_changed(self):
         if self.ui.gaussian_kernel_spin_box.value() % 2 == 0:
