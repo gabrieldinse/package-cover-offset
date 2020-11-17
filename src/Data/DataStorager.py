@@ -62,15 +62,11 @@ class DataStorager:
             segmentation_info = product_type.segmentation_info
             self.cursor.execute(f'''
                 INSERT INTO tipo_produto
-                    (NomeProduto, HueMin, HueMax, SaturationMin, SaturationMax,
-                     ValueMin, ValueMax, FiltroGaussiano, FiltroAbertura)
+                    (NomeProduto, LowerCanny, UpperCanny, FiltroGaussiano)
                 VALUES
-                    ("{product_type.name}", {segmentation_info.min_h},
-                     {segmentation_info.max_h}, {segmentation_info.min_s},
-                     {segmentation_info.max_s}, {segmentation_info.min_v},
-                     {segmentation_info.max_v},
-                     {segmentation_info.gaussian_filter_size},
-                     {segmentation_info.openning_filter_size})
+                    ("{product_type.name}", {segmentation_info.lower_canny},
+                      {segmentation_info.upper_canny},
+                      {segmentation_info.gaussian_filter_size})
             ''')
             self.connection.commit()
             product_type_id = self.cursor.lastrowid
@@ -96,8 +92,7 @@ class DataStorager:
         if self.database_opened:
             self.cursor.execute(f'''
                 SELECT
-                    (NomeProduto, HueMin, HueMax, SaturationMin, SaturationMax,
-                     ValueMin, ValueMax, FiltroGaussiano, FiltroAbertura) 
+                    (NomeProduto, LowerCanny, UpperCanny, FiltroGaussiano)
                 FROM tipo_produto
                 WHERE
                     Id == {product_type_id}
