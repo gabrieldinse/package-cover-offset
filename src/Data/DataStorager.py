@@ -92,16 +92,16 @@ class DataStorager:
         if self.database_opened:
             self.cursor.execute(f'''
                 SELECT
-                    (NomeProduto, LowerCanny, UpperCanny, FiltroGaussiano)
+                    NomeProduto, LowerCanny, UpperCanny, FiltroGaussiano
                 FROM tipo_produto
                 WHERE
-                    Id == {product_type_id}
+                    Id = {product_type_id}
             ''')
             row = list(self.cursor.__iter__())[0]
             product_type_id = row[0]
             template = cv2.imread(f"Data/templates/{product_type_id}.png")
             product_type = ProductType(
-                row[0], SegmentationInfo(*row[1:-1]), template)
+                row[0], SegmentationInfo(*row[1:]), template)
             return product_type
         else:
             pass
