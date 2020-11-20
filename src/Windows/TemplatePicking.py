@@ -7,17 +7,14 @@
 
 # Third party modules
 from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
-                             QDialog, QApplication,  QGraphicsLineItem,
+                             QDialog, QGraphicsLineItem,
                              QMessageBox)
-from PyQt5 import uic
-from PyQt5.QtGui import QBrush, QImage, QPixmap, QPen
-from PyQt5.Qt import QColor
+from PyQt5.QtGui import QImage, QPixmap, QPen
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 import cv2
 
 # Local application imports
-from Vision.SyncedVideoStream import SyncedVideoStream
-from ApplicationWindows.TemplatePickingUi import Ui_Dialog
+from Windows.UI.TemplatePickingUi import Ui_Dialog
 
 
 class TemplateConfigurationScene(QGraphicsScene):

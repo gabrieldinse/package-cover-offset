@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\gabri\Desktop\projeto_especializado\Projeto_Especializado\src\ApplicationWindows\\template_dialog.ui'
+# Form implementation generated from reading ui file 'C:\Users\gabri\Desktop\projeto_especializado\Projeto_Especializado\src\Windows\UI\\template_dialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.1
 #

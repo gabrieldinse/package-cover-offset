@@ -33,5 +33,8 @@ class VideoNotInitializedError(SyncedVideoStreamError):
 class FramesReaderError(VideoError):
     pass
 
+class FrameReadingTimeout(FramesReaderError):
+    pass
+
 class FramesReaderNotStartedError(FramesReaderError):
     pass

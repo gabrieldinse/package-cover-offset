@@ -11,16 +11,16 @@ from contextlib import contextmanager
 import cv2
 
 # Local application imports
-from Errors import (VideoNotOpenedError, VideoNotInitializedError,
-                    FrameReadingError)
+from Miscellaneous.Errors import (VideoNotOpenedError, VideoNotInitializedError,
+                                  FrameReadingError, FrameReadingTimeout)
 
 
 @contextmanager
-def acquire_timeout(lock, timeout):
-    result = lock.acquire(timeout=timeout)
+def acquire_timeout(frame_lock, timeout):
+    result = frame_lock.acquire(timeout=timeout)
     yield result
     if result:
-        lock.release()
+        frame_lock.release()
 
 
 class VideoOutput:
@@ -64,7 +64,8 @@ class FileVideoOutput(VideoOutput):
                 self.stream.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 grabbed, frame = self.stream.read()
             else:
-                raise FramesReadError()
+                raise FrameReadingError(
+                    "Error when reading frame from video file stream")
         return frame
 
 
@@ -77,21 +78,12 @@ class CameraVideoOutput(VideoOutput):
         self.stream = cv2.VideoCapture(self.source_id, cv2.CAP_DSHOW)
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-        self.wait_until_is_opened()
-
-    def wait_until_is_opened(self):
-        while True:
-            try:
-                frame = self.read()
-            except FrameReadingError:
-                pass
-            else:
-                return
 
     def read(self):
         grabbed, frame = self.stream.read()
         if not grabbed:
-            raise FrameReadingError()
+            raise FrameReadingError(
+                "Error when reading frame from raw camera stream")
         return frame
 
 
@@ -100,7 +92,7 @@ class SyncedVideoStream:
         self.stream = None
         self.initializd = False
         self.opened = False
-        self.lock = threading.Lock()
+        self.frame_lock = threading.Lock()
         self.frames_readers = []
 
     @classmethod
@@ -125,7 +117,9 @@ class SyncedVideoStream:
                 self.thread = threading.Thread(target=self.run, args=())
                 self.thread.start()
         else:
-            raise VideoNotInitializedError()
+            raise VideoNotInitializedError(
+                "Error when trying to open camera. Video should be initialized "
+                "first, using constructor methods: from_camera() or from_file()")
 
     def close(self):
         if self.opened:
@@ -140,7 +134,7 @@ class SyncedVideoStream:
             except FrameReadingError:
                 raise
             else:
-                with acquire_timeout(self.lock, timeout=1.0) as acquired:
+                with acquire_timeout(self.frame_lock, timeout=1.0) as acquired:
                     if acquired:
                         for frames_reader in self.frames_readers:
                             frames_reader.frame = frame.copy()
@@ -165,22 +159,25 @@ class FramesReader:
         self.video_stream = video_stream
         self.can_get_frame = threading.Event()
         self.running = False
+        self.frame = None
 
     def copy(self):
         return self.video_stream.create_frames_reader()
 
     def read(self, timeout=1.0):
         if not self.video_stream.opened:
-            raise VideoNotOpenedError()
-        if not self.can_get_frame.wait(timeout=timeout):
-            raise FrameReadingError()
-
-        with acquire_timeout(self.video_stream.lock, timeout) as acquired:
-            if acquired:
+            raise VideoNotOpenedError(
+                "Error: Video stream should bem opened first.")
+        
+        if self.can_get_frame.wait(timeout=timeout):
+            with self.video_stream.frame_lock:
                 self.can_get_frame.clear()
                 return self.frame
-            else:
-                raise FrameReadingError()
+        else:
+            raise FrameReadingTimeout(
+                f"Error: Timeout of {timeout} second"
+                "{'s' if timeout > 1.0 else ''} exceeded when trying to read"
+                " frame.")
 
     @property
     def aspect_ratio(self):

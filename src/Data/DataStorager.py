@@ -5,15 +5,13 @@
 
 # Standard Library
 import datetime
-import time
-import random
 
 # Third party modules
 import mysql.connector as mariadb
 import cv2
 
 # Local application imports
-from Helper import ProductInfo, SegmentationInfo, ProductType, ProductTypeName
+from Miscellaneous.Helper import ProductInfo, SegmentationInfo, ProductType, ProductTypeName
 
 
 class DataStorager:

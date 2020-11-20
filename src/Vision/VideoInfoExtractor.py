@@ -4,23 +4,44 @@
 # Made with PyCharm
 
 # Standard Library
-from queue import Queue
 from threading import Thread
+import time
 
 # Third party modules
+from skimage.morphology import convex_hull_image
+import imutils
+import numpy as np
 import cv2
 
+from skimage import img_as_ubyte
+
 # Local application imports
-from Helper import WorkerQueue, ProductType
-from Events import VideoInfoEvents
-from Vision.SyncedVideoStream import SyncedVideoStream
-from Errors import FrameReadingError
+from Miscellaneous.Helper import ProductType, SegmentationInfo
+from Miscellaneous.Events import VideoInfoEvents
 
 
 class VideoInfoExtractor:
     def __init__(self, frames_reader):
         self.events = VideoInfoEvents()
         self.frames_reader = frames_reader
+        self.min_package_area = 0
+        self.max_package_area = 5000000
+        self.max_template_value = 0.25
+        self.scale_factor = 1
+
+        # TEMPORARIO SUPER
+        self.frame = cv2.imread("../Images/pc1.jpg", 1)
+        height, width, _ = self.frame.shape
+        scale_x = 480 / width
+        scale_y = 640 / height
+        self.frame = imutils.resize(self.frame, width=int(self.frame.shape[1] * scale_x),
+                                    height=int(self.frame.shape[0] * scale_y))
+        self.template = cv2.imread("../Images/template.jpg", 0)
+        self.template = imutils.resize(self.template, width=int(self.template.shape[1] * scale_x),
+                                    height=int(self.template.shape[0] * scale_y))
+        self.gaussian_kernel_size = 5
+        self.lower_canny = 100
+        self.upper_canny = 200
 
         self.running = False
 
@@ -30,105 +51,27 @@ class VideoInfoExtractor:
     def load_product_type(self, product_type : ProductType):
         pass
 
-    def get_centroids(self):
-        """ Extrai da imagem os diametros e centroides da cada laranja. """
+    # def verify_frame(self):
+    #     if self.identifier_running:
+    #         if (time.time() - self.capture_timer) >= self.capture_timer_delay:
+    #             for diameter, centroid in zip(self.diameters, self.centroids):
+    #                 if (self.capture_line_position <= centroid[0]
+    #                         <= self.capture_box_right_position):
+    #                     self.create_capture_mask()
+    #
+    #                     # cv2.mean retorna np.ndarray([R, G, B, alpha]), onde
+    #                     # alpha eh a transparencia, nao utilizada neste caso
+    #                     rgb_mean = np.array(cv2.mean(
+    #                         self.processed_frame, mask=self.capture_mask)[0:3],
+    #                                         dtype=np.uint8)
+    #                     self.data_writer.add(
+    #                         diameter * self.diameter_prop, rgb_mean)
+    #                     self.capture_timer = time.time()
+    #                     return
 
-        contours = cv2.findContours(self.segment_mask.copy(),
-                                    cv2.RETR_EXTERNAL,
-                                    cv2.CHAIN_APPROX_SIMPLE)
-        contours = imutils.grab_contours(contours)
-        self.diameters = []
-        self.centroids = []
-        self.contours = []
-        for contour in contours:
-            # Obtem os momentos do contorno:
-            # m00 = area em pixels
-            # m10 = momento de ordem 1 em x
-            # m01 = momento de ordem 1 em y
-            # m10/m00 = posicao x do centroide
-            # m01/m00 = posicao y do centroide
-            mom = cv2.moments(contour)
-
-            # Filtra os contornos obtidos por metrica circular e area
-            if (4*pi*mom['m00']/cv2.arcLength(contour, True)**2 > 0.8 and
-                    mom['m00'] > 300):
-                # Se o objeto eh aproximadamente circular, o diametro pode ser
-                # estimado pela formula abaixo
-                diameter = 2*sqrt(mom['m00']/pi)
-                # Eh de interesse apenas a posicao do centroide em x
-                centroid = (int(mom['m10'] / mom['m00']),
-                            int(mom['m01'] / mom['m00']))
-                self.diameters.append(diameter)
-                self.centroids.append(centroid)
-                self.contours.append(contour)
-
-    def segment_frame(self):
-        self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-
-        # Corta o frame de acordo com os parametros de maximo e minimo de
-        # largura e altura
-        cropped_frame = np.zeros(self.frame.shape, dtype=np.uint8)
-        cropped_frame[self.min_frame_height:self.max_frame_height,
-                      self.min_frame_width:self.max_frame_width] = \
-            self.frame[self.min_frame_height:self.max_frame_height,
-                       self.min_frame_width:self.max_frame_width]
-        self.frame = cropped_frame
-
-        # Filtro gaussiano para suavizar ruidos na imagem
-        blur = cv2.GaussianBlur(cropped_frame, (self.gaussian_kernel_size,
-                                self.gaussian_kernel_size), 0)
-        hsv = cv2.cvtColor(blur, cv2.COLOR_RGB2HSV)
-
-        # Segmentacao de acordo com o invervalo de cores HSV
-        in_range_mask = cv2.inRange(
-            hsv, (self.min_h, self.min_s, self.min_v),
-                 (self.max_h, self.max_s, self.max_v))
-        self.segment_mask = cv2.morphologyEx(in_range_mask, cv2.MORPH_OPEN,
-                                             self.opening_kernel)
-        self.processed_frame = cv2.bitwise_and(cropped_frame, cropped_frame,
-                                               mask=self.segment_mask)
-
-    def verify_frame(self):
-        if self.identifier_running:
-            if (time.time() - self.capture_timer) >= self.capture_timer_delay:
-                for diameter, centroid in zip(self.diameters, self.centroids):
-                    if (self.capture_line_position <= centroid[0]
-                            <= self.capture_box_right_position):
-                        self.create_capture_mask()
-
-                        # cv2.mean retorna np.ndarray([R, G, B, alpha]), onde
-                        # alpha eh a transparencia, nao utilizada neste caso
-                        rgb_mean = np.array(cv2.mean(
-                            self.processed_frame, mask=self.capture_mask)[0:3],
-                                            dtype=np.uint8)
-                        self.data_writer.add(
-                            diameter * self.diameter_prop, rgb_mean)
-                        self.capture_timer = time.time()
-                        return
-
-    def create_capture_mask(self):
-        """ Cria uma mascara de captura baseada nos parametros de captura. """
-
-        self.capture_mask = np.zeros(
-            (int(self.camera.height), int(self.camera.width)), dtype=np.uint8)
-
-        self.capture_mask[
-            self.min_frame_height:
-            self.max_frame_height + 1,
-            self.capture_box_left_position:
-            self.capture_box_right_position + 1
-        ] = np.ones((
-            self.max_frame_height - self.min_frame_height + 1,
-            self.capture_box_left_width + 1 +
-            self.capture_box_right_width),
-            dtype=np.uint8)
-
-        self.capture_mask = cv2.bitwise_and(
-            self.capture_mask, self.capture_mask,
-            mask=self.segment_mask)
-
-    def start(self):
+    def start(self, segmentation_info: SegmentationInfo):
         if not self.running:
+            self.segmentation_info = segmentation_info
             self.running = True
             self.thread = Thread(target=self.run, args=())
             self.thread.start()
@@ -140,23 +83,21 @@ class VideoInfoExtractor:
 
     def run(self):
         while self.running:
-            try:
-                self.frame = self.frames_reader.read()
-            except FrameReadingError:
-                pass
-            else:
-                self.get_convex_package()  # Convex hull
-                self.calculate_package_centroid()
-                self.calculate_cover_centroid()  # Template matching
-                self.calculate_offset()
-
-            # self.grabbed, self.frame = self.camera.read()
-            # if self.grabbed:
-            #     self.segment_frame()
-            #     self.events.emit('new_frame', self.frame, self.mask)
-            #     self.get_centroids()
-            #     self.verify_frame()
-            #     self.events.emit('new_product', self.last_product_info)
+            # try:
+            #     self.frame = self.frames_reader.read()
+            # except FrameReadingError:
+            #     pass
+            # else:
+            #     self.get_convex_package()  # Convex hull
+            #     self.calculate_package_centroid()
+            #     self.calculate_cover_centroid()  # Template matching
+            #     self.calculate_offset()
+            start = time.time()
+            self.get_convex_package()  # Convex hull
+            self.calculate_package_centroid()
+            self.calculate_cover_centroid()  # Template matching
+            self.calculate_offset()
+            print(time.time() - start)
 
     def get_convex_package(self):
         gray_frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2GRAY)
@@ -164,41 +105,74 @@ class VideoInfoExtractor:
             gray_frame,
             (self.gaussian_kernel_size, self.gaussian_kernel_size), 0)
 
-        self.calculate_canny_threshold(blurred_gray_frame)
+        # self.calculate_canny_threshold(blurred_gray_frame)
         canny_edges = cv2.Canny(
             blurred_gray_frame, self.lower_canny, self.upper_canny)
-        self.convex_hull = convex_hull_image(canny_edges)
+        self.convex_hull = img_as_ubyte(convex_hull_image(canny_edges))
+        # cv2.imshow("test", convex_hull)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     return
+        contours, _ = cv2.findContours(self.convex_hull, cv2.RETR_TREE,
+                                       cv2.CHAIN_APPROX_SIMPLE)
+        cnt = contours[0]
+        self.x, self.y, self.w, self.h = cv2.boundingRect(cnt)
+        self.convex_hull = self.convex_hull[self.y:self.y+self.h,self.x:self.x+self.w]
+        cv2.imshow("test kkk", gray_frame[self.y:self.y+self.h,self.x:self.x+self.w])
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            return
 
     def calculate_package_centroid(self):
-        count = (self.convex_hull == 1).sum()
-        self.x_center, _ = np.argwhere(self.convex_hull == 1).sum(0) / count
+        area = (self.convex_hull == 255).sum()
+        if self.min_package_area < area < self.max_package_area:
+            self.package_centroid, _ = np.argwhere(self.convex_hull == 255).sum(0) / area
+        else:
+            self.package_centroid = None
+
+    def package_centroid_is_accepted(self):
+        return (self.package_centroid is not None)
+                # and self.package_centroid >= self.threshold_position)
 
     def calculate_cover_centroid(self):
-        found = None
-        method = eval('cv2.TM_SQDIFF_NORMED')
-        for scale in np.linspace(0.8, 1.2, 9):
-            for orientation in ["0", "180"]:
-                resized = imutils.resize(template,
-                                         width=int(template.shape[1] * scale))
-                # r = template.shape[1] / float(resized.shape[1])
-                h, w = resized.shape
-                if orientation == "180":
-                    center = (w / 2, h / 2)
-                    M = cv2.getRotationMatrix2D(center, 180, 1.0)
-                    resized = cv2.warpAffine(resized, M, (h, w))
+        pass
+        if self.package_centroid_is_accepted():
 
-                method = eval(meth)
+            found = None
+            method = eval('cv2.TM_SQDIFF_NORMED')
+            for scale in np.linspace(0.9, 1.1, 5):
+                for orientation in ["0", "180"]:
+                    resized_template = imutils.resize(self.template,
+                                             width=int(self.template.shape[1] * scale))
+                    h, w = resized_template.shape
+                    if orientation == "180":
+                        center = (w / 2, h / 2)
+                        M = cv2.getRotationMatrix2D(center, 180, 1.0)
+                        resized_template = cv2.warpAffine(resized_template, M, (h, w))
 
-                res = cv2.matchTemplate(frame, resized, method)
-                min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+                    gray_frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2GRAY)
+                    res = cv2.matchTemplate(gray_frame[self.y:self.y+self.h,self.x:self.x+self.w], resized_template, method)
+                    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
 
-                if found is None or min_val < found[0]:
-                    found = (min_val, min_loc, scale, max_loc)
+                    if found is None or min_val < found[0]:
+                        found = (min_val, min_loc, scale, max_loc)
 
-                if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
-                    top_left = min_loc
-                else:
-                    top_left = max_loc
-                bottom_right = (top_left[0] + w, top_left[1] + h)
-        h, w = template.shape
-        centroide = (found[1][0] + found[2] * w / 2, found[1][1] + found[2] * h / 2)
+            if found[0] < self.max_template_value:
+                h, w = self.template.shape
+                self.cover_centroid = found[1][1] + found[2] * h / 2  # TEMP
+            else:
+                self.cover_centroid = None
+        else:
+            self.cover_centroid = None
+
+    def can_calculate_offset(self):
+        return (self.package_centroid is not None
+                and self.cover_centroid is not None)
+
+    def calculate_offset(self):
+        if self.package_centroid_is_accepted():
+            has_cover = False if self.cover_centroid is None else True
+            if has_cover:
+                offset = (self.cover_centroid - self.package_centroid) * self.scale_factor
+            else:
+                offset = 0.0
+            print(offset)
+            # self.emit("new_product", ProductInfo(datetime_now_str(), offset, has_cover))

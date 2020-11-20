@@ -4,24 +4,19 @@
 # Made with PyCharm
 
 # Standard Library
-import sys
 
 # Third party modules
 from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
-                             QDialog, QApplication)
-from PyQt5 import uic
+                             QDialog)
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QImage, QPixmap
 import cv2
-import numpy as np
 from skimage.morphology import convex_hull_image
 from skimage import img_as_ubyte
-import matplotlib.pyplot as plt
 
 # Local application imports
-from Vision.SyncedVideoStream import SyncedVideoStream
-from Helper import SegmentationInfo, circular_kernel
-from ApplicationWindows.SegmentationSettingsUi import Ui_Dialog
+from Miscellaneous.Helper import SegmentationInfo
+from Windows.UI.SegmentationSettingsUi import Ui_Dialog
 
 
 class SegmentationSettings(QDialog):

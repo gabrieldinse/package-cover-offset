@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\gabri\Desktop\projeto_especializado\Projeto_Especializado\src\ApplicationWindows\\main_window.ui'
+# Form implementation generated from reading ui file 'C:\Users\gabri\Desktop\projeto_especializado\Projeto_Especializado\src\Windows\UI\\main_window.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.1
 #
@@ -157,62 +157,62 @@ class Ui_MainWindow(object):
         self.verticalLayout_20.addWidget(self.label_31)
         spacerItem = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.verticalLayout_20.addItem(spacerItem)
-        self.state_label = QtWidgets.QLabel(self.layoutWidget)
+        self.vision_state_label = QtWidgets.QLabel(self.layoutWidget)
         font = QtGui.QFont()
         font.setPointSize(11)
         font.setBold(True)
         font.setWeight(75)
-        self.state_label.setFont(font)
-        self.state_label.setStyleSheet("background-color: rgb(235, 235, 235);\n"
+        self.vision_state_label.setFont(font)
+        self.vision_state_label.setStyleSheet("background-color: rgb(235, 235, 235);\n"
 "color: rgb(50, 50, 50);\n"
 "border-color: rgb(100, 100, 100);\n"
 "border-width : 2px;\n"
 "border-style:solid;")
-        self.state_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.state_label.setObjectName("state_label")
-        self.verticalLayout_20.addWidget(self.state_label)
+        self.vision_state_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.vision_state_label.setObjectName("vision_state_label")
+        self.verticalLayout_20.addWidget(self.vision_state_label)
         spacerItem1 = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.verticalLayout_20.addItem(spacerItem1)
-        self.stop_push_button = QtWidgets.QPushButton(self.layoutWidget)
-        self.stop_push_button.setEnabled(False)
+        self.stop_vision_push_button = QtWidgets.QPushButton(self.layoutWidget)
+        self.stop_vision_push_button.setEnabled(False)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.stop_push_button.sizePolicy().hasHeightForWidth())
-        self.stop_push_button.setSizePolicy(sizePolicy)
-        self.stop_push_button.setMaximumSize(QtCore.QSize(999999, 30))
+        sizePolicy.setHeightForWidth(self.stop_vision_push_button.sizePolicy().hasHeightForWidth())
+        self.stop_vision_push_button.setSizePolicy(sizePolicy)
+        self.stop_vision_push_button.setMaximumSize(QtCore.QSize(999999, 30))
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(True)
         font.setWeight(75)
-        self.stop_push_button.setFont(font)
-        self.stop_push_button.setStyleSheet("background-color: rgb(100, 100, 100);\n"
+        self.stop_vision_push_button.setFont(font)
+        self.stop_vision_push_button.setStyleSheet("background-color: rgb(100, 100, 100);\n"
 "color: rgb(255, 255, 255);\n"
 "border-color: rgb(235, 235, 235);\n"
 "border-width : 2px;\n"
 "border-style:solid;")
-        self.stop_push_button.setObjectName("stop_push_button")
-        self.verticalLayout_20.addWidget(self.stop_push_button)
-        self.start_push_button = QtWidgets.QPushButton(self.layoutWidget)
-        self.start_push_button.setEnabled(False)
+        self.stop_vision_push_button.setObjectName("stop_vision_push_button")
+        self.verticalLayout_20.addWidget(self.stop_vision_push_button)
+        self.start_vision_push_button = QtWidgets.QPushButton(self.layoutWidget)
+        self.start_vision_push_button.setEnabled(False)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.start_push_button.sizePolicy().hasHeightForWidth())
-        self.start_push_button.setSizePolicy(sizePolicy)
-        self.start_push_button.setMaximumSize(QtCore.QSize(99999, 30))
+        sizePolicy.setHeightForWidth(self.start_vision_push_button.sizePolicy().hasHeightForWidth())
+        self.start_vision_push_button.setSizePolicy(sizePolicy)
+        self.start_vision_push_button.setMaximumSize(QtCore.QSize(99999, 30))
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(True)
         font.setWeight(75)
-        self.start_push_button.setFont(font)
-        self.start_push_button.setStyleSheet("background-color: rgb(100, 100, 100);\n"
+        self.start_vision_push_button.setFont(font)
+        self.start_vision_push_button.setStyleSheet("background-color: rgb(100, 100, 100);\n"
 "color: rgb(255, 255, 255);\n"
 "border-color: rgb(235, 235, 235);\n"
 "border-width : 2px;\n"
 "border-style:solid;")
-        self.start_push_button.setObjectName("start_push_button")
-        self.verticalLayout_20.addWidget(self.start_push_button)
+        self.start_vision_push_button.setObjectName("start_vision_push_button")
+        self.verticalLayout_20.addWidget(self.start_vision_push_button)
         spacerItem2 = QtWidgets.QSpacerItem(20, 100, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_20.addItem(spacerItem2)
         self.product_type_combo_box = QtWidgets.QComboBox(self.centralwidget)
@@ -392,7 +392,7 @@ class Ui_MainWindow(object):
         self.label_13.setAlignment(QtCore.Qt.AlignCenter)
         self.label_13.setObjectName("label_13")
         self.turn_on_camera_push_button = QtWidgets.QPushButton(self.centralwidget)
-        self.turn_on_camera_push_button.setGeometry(QtCore.QRect(70, 360, 150, 30))
+        self.turn_on_camera_push_button.setGeometry(QtCore.QRect(70, 390, 150, 30))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -434,7 +434,7 @@ class Ui_MainWindow(object):
         self.label_14.setObjectName("label_14")
         self.turn_off_camera_push_button = QtWidgets.QPushButton(self.centralwidget)
         self.turn_off_camera_push_button.setEnabled(False)
-        self.turn_off_camera_push_button.setGeometry(QtCore.QRect(70, 400, 150, 30))
+        self.turn_off_camera_push_button.setGeometry(QtCore.QRect(70, 430, 150, 30))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -453,20 +453,20 @@ class Ui_MainWindow(object):
 "border-width : 2px;\n"
 "border-style:solid;")
         self.turn_off_camera_push_button.setObjectName("turn_off_camera_push_button")
-        self.state_label_2 = QtWidgets.QLabel(self.centralwidget)
-        self.state_label_2.setGeometry(QtCore.QRect(110, 440, 69, 22))
+        self.camera_state_label = QtWidgets.QLabel(self.centralwidget)
+        self.camera_state_label.setGeometry(QtCore.QRect(110, 360, 69, 22))
         font = QtGui.QFont()
         font.setPointSize(11)
         font.setBold(True)
         font.setWeight(75)
-        self.state_label_2.setFont(font)
-        self.state_label_2.setStyleSheet("background-color: rgb(235, 235, 235);\n"
+        self.camera_state_label.setFont(font)
+        self.camera_state_label.setStyleSheet("background-color: rgb(235, 235, 235);\n"
 "color: rgb(50, 50, 50);\n"
 "border-color: rgb(100, 100, 100);\n"
 "border-width : 2px;\n"
 "border-style:solid;")
-        self.state_label_2.setAlignment(QtCore.Qt.AlignCenter)
-        self.state_label_2.setObjectName("state_label_2")
+        self.camera_state_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.camera_state_label.setObjectName("camera_state_label")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 21))
@@ -488,9 +488,9 @@ class Ui_MainWindow(object):
         self.edit_product_push_button.setText(_translate("MainWindow", "Editar"))
         self.test_push_button.setText(_translate("MainWindow", "Testar"))
         self.label_31.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\">Sistema</p></body></html>"))
-        self.state_label.setText(_translate("MainWindow", "OFF"))
-        self.stop_push_button.setText(_translate("MainWindow", "Parar"))
-        self.start_push_button.setText(_translate("MainWindow", "Iniciar"))
+        self.vision_state_label.setText(_translate("MainWindow", "OFF"))
+        self.stop_vision_push_button.setText(_translate("MainWindow", "Parar"))
+        self.start_vision_push_button.setText(_translate("MainWindow", "Iniciar"))
         self.label_27.setText(_translate("MainWindow", "Último (mm):"))
         self.last_diameter_label.setText(_translate("MainWindow", "0"))
         self.label_28.setText(_translate("MainWindow", "Média (mm):"))
@@ -500,7 +500,7 @@ class Ui_MainWindow(object):
         self.turn_on_camera_push_button.setText(_translate("MainWindow", "Ligar"))
         self.label_14.setText(_translate("MainWindow", "Câmera"))
         self.turn_off_camera_push_button.setText(_translate("MainWindow", "Desligar"))
-        self.state_label_2.setText(_translate("MainWindow", "OFF"))
+        self.camera_state_label.setText(_translate("MainWindow", "OFF"))
 
 
 if __name__ == "__main__":
