@@ -56,17 +56,26 @@ class FileVideoOutput(VideoOutput):
         self.stream = cv2.VideoCapture(self.filepath)
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+        self.frame_count = self.stream.get(cv2.CAP_PROP_FRAME_COUNT)
 
     def read(self):
         grabbed, frame = self.stream.read()
         if not grabbed:
             if self.repeat:
-                self.stream.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                self.current_frame_pos = 0
                 grabbed, frame = self.stream.read()
             else:
                 raise FrameReadingError(
                     "Error when reading frame from video file stream")
         return frame
+
+    @property
+    def current_frame_pos(self):
+        return self.stream.get(cv2.CAP_PROP_POS_FRAMES)
+
+    @current_frame_pos.setter
+    def current_frame_pos(self, value):
+        self.stream.set(cv2.CAP_PROP_POS_FRAMES, value)
 
 
 class CameraVideoOutput(VideoOutput):
@@ -119,7 +128,9 @@ class SyncedVideoStream:
         else:
             raise VideoNotInitializedError(
                 "Error when trying to open camera. Video should be initialized "
-                "first, using constructor methods: from_camera() or from_file()")
+                "first, using constructor methods: "
+                "SyncedVideoStream.from_camera() or "
+                "SyncedVideoStream.from_file()")
 
     def close(self):
         if self.opened:
@@ -186,6 +197,3 @@ class FramesReader:
     @property
     def resolution(self):
         return self.video_stream.resolution
-
-    def bind(self, **kwargs):
-        self.events.bind(**kwargs)

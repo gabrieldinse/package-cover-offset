@@ -28,7 +28,6 @@ from Miscellaneous.Helper import WorkerQueue, ProductType, ProductTypeName, Prod
 from Miscellaneous.Errors import FrameReadingError
 
 
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
