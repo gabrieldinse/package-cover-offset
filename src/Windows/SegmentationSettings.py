@@ -87,12 +87,6 @@ class SegmentationSettings(QDialog):
             height, width, _ = frame.shape
             bytes_per_line = 3 * width
 
-            # Mostra o frame original
-            gui_frame = QImage(frame.data, width, height,
-                               bytes_per_line, QImage.Format_RGB888)
-            gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
-            self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
-
             # Segmentação por Canny e Convex hull
             gray_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
             blurred_gray_frame = cv2.GaussianBlur(
@@ -103,6 +97,18 @@ class SegmentationSettings(QDialog):
             canny_edges = cv2.Canny(
                 blurred_gray_frame, self.lower_canny, self.upper_canny)
             convex_hull = img_as_ubyte(convex_hull_image(canny_edges))
+
+            contours, _ = cv2.findContours(convex_hull, cv2.RETR_TREE,
+                                           cv2.CHAIN_APPROX_SIMPLE)
+            if contours:
+                contour = contours[0]
+                cv2.drawContours(frame, [contour], 0, (0, 255, 0), 2)
+
+            # Mostra o frame original com o contorno  da embalagem
+            gui_frame = QImage(frame.data, width, height,
+                               bytes_per_line, QImage.Format_RGB888)
+            gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
+            self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
 
             # Mostra o frame segmentado
             segmented_gui_frame = QImage(
