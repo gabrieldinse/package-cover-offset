@@ -12,8 +12,9 @@ import mysql.connector as mariadb
 import cv2
 
 # Local application imports
-from Miscellaneous.Helper import Product, SegmentationInfo, ProductType, ProductTypeName
-
+from Miscellaneous.Helper import (Product, SegmentationInfo, ProductType,
+                                  ProductTypeName)
+from Miscellaneous.Errors import TemplateReadingError, TemplateWritingError
 
 class DataStorager:
     def __init__(self, ):
@@ -84,7 +85,7 @@ class DataStorager:
             if not cv2.imwrite(
                     os.path.join(self.template_path, f"{product_type_id}.png"),
                         product_type.template):
-                raise FileError("Error when saving template file")
+                raise FileWritingError("Error when saving template file")
             return product_type_id
         else:
             pass
@@ -111,10 +112,10 @@ class DataStorager:
                     Id = {product_type_id}
             ''')
             row = next(self.cursor)
-            product_type_id = row[0]
-            if not (template := cv2.imread(
-                os.path.join(self.template_path, f"{product_type_id}.png"))):
-                raise FileError("Error when opening template file")
+            template = cv2.imread(
+                os.path.join(self.template_path, f"{product_type_id}.png"))
+            if template is None:
+                raise TemplateReadingError("Error when opening template file")
             product_type = ProductType(
                 row[0], SegmentationInfo(*row[1:]), template)
             return product_type

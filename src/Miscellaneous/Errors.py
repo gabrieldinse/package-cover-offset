@@ -17,6 +17,18 @@ class Error(Exception):
 class FileError(Error):
     pass
 
+class FileReadingError(FileError):
+    pass
+
+class TemplateReadingError(FileReadingError):
+    pass
+
+class FileWritingError(FileError):
+    pass
+
+class TemplateWritingError(FileWritingError):
+    pass
+
 
 class VideoError(Error):
     pass

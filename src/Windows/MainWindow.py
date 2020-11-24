@@ -10,7 +10,7 @@ from typing import Sequence
 # Third party modules
 from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
                              QMainWindow, QApplication, QInputDialog, QLineEdit)
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QCoreApplication
 from PyQt5.QtGui import QImage, QPixmap, QColor
 import cv2
 
@@ -25,7 +25,7 @@ from Vision.SyncedVideoStream import SyncedVideoStream
 from Vision.VideoInfoExtractor import VideoInfoExtractor
 
 from Miscellaneous.Helper import ProductType, ProductTypeName, Product, Production
-from Miscellaneous.Errors import FrameReadingError
+from Miscellaneous.Errors import FrameReadingError, TemplateReadingError
 
 
 class MainWindow(QMainWindow):
@@ -83,51 +83,11 @@ class MainWindow(QMainWindow):
         self.camera.close()
         self.data_storager.close_database()
 
-    def add_product(self, product: Product):
-        # Registrar no banco de dados
-        self.production.add(product)
-        self.update_offset_info_ui(product)
-
-    def load_product_type(self, product_type_id):
-        pass
-        # product_type = self.data_storager.get_product_type(product_type_id)
-        # self.vision_system.load_product_type()
-
-    def edit_product_type(self, product_type_id, product_type):
-        pass
-
-    def register_product(self):
-        product_name, ok_clicked = QInputDialog().getText(
-            self, "Nome do produto", "Nome do produto",
-            QLineEdit.Normal, "")
-        if ok_clicked and product_name:
-            segmentation_dialog = SegmentationSettings(
-                product_name, self.camera.create_frames_reader(), parent=self)
-            segmentation_dialog.exec()
-
-            if segmentation_dialog.closed_for_next_step:
-                segmentation_info = segmentation_dialog.get_segmentation_info()
-
-                template_dialog = TemplatePicking(
-                    product_name, self.camera.create_frames_reader(), parent=self)
-                template_dialog.exec()
-
-                if template_dialog.closed_for_next_step:
-                    template = template_dialog.get_template()
-
-                    product_type = ProductType(
-                            product_name, segmentation_info, template)
-                    product_type_id = self.data_storager.add_product_type(
-                        product_type)
-                    self.set_product_types_list(
-                        self.data_storager.get_product_types_names())
-                    self.set_product_type(product_type_id)
-
     def start_vision_system(self):
-        # self.data_storager.start_production(self.current_product_type_id)
-        self.vision_system.start(
-            self.data_storager.get_product_type(
-                self.current_product_type_id).segmentation_info)
+        segmentation_info = self.data_storager.get_product_type(
+            self.current_product_type_id).segmentation_info
+        self.vision_system.start(segmentation_info)
+
         self.ui.start_vision_push_button.setDisabled(True)
         self.ui.stop_vision_push_button.setEnabled(True)
         self.ui.vision_state_label.setText('ON')
@@ -184,6 +144,46 @@ class MainWindow(QMainWindow):
             'border-style: solid;'
             'color: rgb(255, 0, 0);')
         self.camera.close()
+
+    def add_product(self, product: Product):
+        # Registrar no banco de dados
+        self.production.add(product)
+        self.update_offset_info_ui(product)
+
+    def load_product_type(self, product_type_id):
+        pass
+        # product_type = self.data_storager.get_product_type(product_type_id)
+        # self.vision_system.load_product_type()
+
+    def edit_product_type(self, product_type_id, product_type):
+        pass
+
+    def register_product(self):
+        product_name, ok_clicked = QInputDialog().getText(
+            self, "Nome do produto", "Nome do produto",
+            QLineEdit.Normal, "")
+        if ok_clicked and product_name:
+            segmentation_dialog = SegmentationSettings(
+                product_name, self.camera.create_frames_reader(), parent=self)
+            segmentation_dialog.exec()
+
+            if segmentation_dialog.closed_for_next_step:
+                segmentation_info = segmentation_dialog.get_segmentation_info()
+
+                template_dialog = TemplatePicking(
+                    product_name, self.camera.create_frames_reader(), parent=self)
+                template_dialog.exec()
+
+                if template_dialog.closed_for_next_step:
+                    template = template_dialog.get_template()
+
+                    product_type = ProductType(
+                            product_name, segmentation_info, template)
+                    product_type_id = self.data_storager.add_product_type(
+                        product_type)
+                    self.set_product_types_list(
+                        self.data_storager.get_product_types_names())
+                    self.set_product_type(product_type_id)
 
     def set_product_types_list(self, product_type_names: Sequence[ProductTypeName]):
         self.ui.product_type_combo_box.setDisabled(True)
@@ -265,10 +265,21 @@ def main():
     import subprocess
     subprocess.call([r'.\UI\generate_py_code_from_ui.bat'])
 
+    sys._excepthook = sys.excepthook
+
+    def exception_hook(exctype, value, traceback):
+        sys._excepthook(exctype, value, traceback)
+        sys.exit(1)
+
+    sys.excepthook = exception_hook
+
     application = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(application.exec_())
+    try:
+        application.exec_()
+    except:
+        print("Exiting program...")
 
 
 if __name__ == '__main__':

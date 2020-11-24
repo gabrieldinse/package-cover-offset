@@ -31,6 +31,7 @@ class VideoInfoExtractor:
         self.scale_factor = 1
         self.threshold_position = 0
         self.template_matching_method = cv2.TM_SQDIFF_NORMED
+        self.new_package_delay = 1.5
 
         # TEMPORARIO SUPER
         self.frame = cv2.imread("../Images/pc1.jpg", 1)
@@ -54,27 +55,10 @@ class VideoInfoExtractor:
     def load_product_type(self, product_type : ProductType):
         pass
 
-    # def verify_frame(self):
-    #     if self.identifier_running:
-    #         if (time.time() - self.capture_timer) >= self.capture_timer_delay:
-    #             for diameter, centroid in zip(self.diameters, self.centroids):
-    #                 if (self.capture_line_position <= centroid[0]
-    #                         <= self.capture_box_right_position):
-    #                     self.create_capture_mask()
-    #
-    #                     # cv2.mean retorna np.ndarray([R, G, B, alpha]), onde
-    #                     # alpha eh a transparencia, nao utilizada neste caso
-    #                     rgb_mean = np.array(cv2.mean(
-    #                         self.processed_frame, mask=self.capture_mask)[0:3],
-    #                                         dtype=np.uint8)
-    #                     self.data_writer.add(
-    #                         diameter * self.diameter_prop, rgb_mean)
-    #                     self.capture_timer = time.time()
-    #                     return
-
     def start(self, segmentation_info: SegmentationInfo):
         if not self.running:
             self.segmentation_info = segmentation_info
+            self.current_capture_time = time.time() + self.new_package_delay
             self.running = True
             self.thread = Thread(target=self.run, args=())
             self.thread.start()
@@ -91,17 +75,22 @@ class VideoInfoExtractor:
             # except FrameReadingError:
             #     pass
             # else:
-            #     self.get_convex_package()  # Convex hull
-            #     self.calculate_package_centroid()
-            #     self.calculate_cover_centroid()  # Template matching
-            #     self.calculate_offset()
 
             # start = time.time()
-            self.get_convex_package()  # Convex hull
-            self.calculate_package_centroid()
-            self.calculate_cover_centroid()  # Template matching
-            self.calculate_offset()
+            if self.capture_time_passed():
+                self.reset_capture_timer()
+                self.get_convex_package()  # Convex hull
+                self.calculate_package_centroid()
+                if self.is_package_centroid_in_place():
+                    self.calculate_cover_centroid()  # Template matching
+                    self.calculate_offset()
             # print(time.time() - start)
+
+    def capture_time_passed(self):
+        return time.time() - self.current_capture_time >= self.new_package_delay
+
+    def reset_capture_timer(self):
+        self.current_capture_time = time.time()
 
     def get_convex_package(self):
         self.gray_frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2GRAY)
@@ -133,52 +122,45 @@ class VideoInfoExtractor:
         else:
             self.package_centroid = None
 
-    def package_centroid_is_valid(self):
+    def is_package_centroid_in_place(self):
         return (self.package_centroid is not None
                 and self.package_centroid >= self.threshold_position)
 
     def calculate_cover_centroid(self):
-        if self.package_centroid_is_valid():
-            found = None
-            for scale in np.linspace(0.9, 1.1, 5):
-                for orientation in ["0", "180"]:
-                    resized_template = imutils.resize(
-                        self.template, width=int(self.template.shape[1] * scale))
-                    h, w = resized_template.shape
-                    if orientation == "180":
-                        center = (w / 2, h / 2)
-                        rotation = cv2.getRotationMatrix2D(center, 180, 1.0)
-                        resized_template = cv2.warpAffine(
-                            resized_template, rotation, (h, w))
+        best_match = None
+        for scale in np.linspace(0.9, 1.1, 5):
+            for orientation in ["0", "180"]:
+                resized_template = imutils.resize(
+                    self.template, width=int(self.template.shape[1] * scale))
+                h, w = resized_template.shape
+                if orientation == "180":
+                    center = (w / 2, h / 2)
+                    rotation = cv2.getRotationMatrix2D(center, 180, 1.0)
+                    resized_template = cv2.warpAffine(
+                        resized_template, rotation, (h, w))
 
-                    similarity = cv2.matchTemplate(
-                        self.gray_frame[self.y:self.y+self.h,self.x:self.x+self.w],
-                        resized_template, self.template_matching_method)
-                    min_value, _, min_location, _ = cv2.minMaxLoc(similarity)
+                similarity = cv2.matchTemplate(
+                    self.gray_frame[self.y:self.y+self.h,self.x:self.x+self.w],
+                    resized_template, self.template_matching_method)
+                min_value, _, min_location, _ = cv2.minMaxLoc(similarity)
 
-                    if found is None or min_value < found[0]:
-                        found = (min_value, min_location, scale)
+                if best_match is None or min_value < best_match[0]:
+                    best_match = (min_value, min_location, scale)
 
-            if found[0] < self.max_template_value:
-                h, w = self.template.shape
-                self.cover_centroid = found[1][1] + found[2] * h / 2  # TEMP
-                return
-
-        self.cover_centroid = None
+        if best_match[0] < self.max_template_value:
+            h, w = self.template.shape
+            self.cover_centroid = best_match[1][1] + best_match[2] * h / 2
+        else:
+            self.cover_centroid = None
 
     def has_cover(self):
         return self.cover_centroid is not None
 
-    def can_calculate_offset(self):
-        return (self.package_centroid_is_valid() and
-                self.has_cover())
-
     def calculate_offset(self):
-        if self.can_calculate_offset():
+        if self.has_cover():
             offset = (self.cover_centroid - self.package_centroid) \
                          * self.scale_factor
         else:
             offset = 0.0
-        print(offset)
         self.events.emit("new_product",
                          Product(datetime_now_str(), offset, self.has_cover()))
