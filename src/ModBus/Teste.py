@@ -1,5 +1,5 @@
 
-from Modbus_connector import ModbusConnector
+from ModbusConnector import ModbusConnector
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QMainWindow
 import sys
@@ -10,8 +10,8 @@ Window = QMainWindow()
 Window.show()
 
 Modbus = ModbusConnector(debug=True)
-send_command=b'Aaa'
-Modbus.send(send_command)
+send_command=b'A'
+Modbus.send_offset(send_command)
 # time.sleep(2)
 # Modbus.receive()
 # Modbus.close()
