@@ -24,7 +24,7 @@ from Data.DataStorager import DataStorager
 from Vision.SyncedVideoStream import SyncedVideoStream
 from Vision.VideoInfoExtractor import VideoInfoExtractor
 
-from Miscellaneous.Helper import WorkerQueue, ProductType, ProductTypeName, ProductInfo
+from Miscellaneous.Helper import ProductType, ProductTypeName, Product, Production
 from Miscellaneous.Errors import FrameReadingError
 
 
@@ -34,29 +34,12 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.camera = SyncedVideoStream().from_camera(3)
+        self.camera = SyncedVideoStream.from_camera(3)
         self.data_storager = DataStorager()
         self.data_storager.open_database()
         self.vision_system = VideoInfoExtractor(
             self.camera.create_frames_reader())
-
-        # Configurações iniciais
-        self.set_product_types_list(
-            self.data_storager.get_product_types_names())
-
-        self.vision_system.bind(new_product=self.add_product)
-
-        self.running = False
-
-        self.frames_reader = self.camera.create_frames_reader()
-        self.products_adder = WorkerQueue(self.add_product)
-        threading.Thread(target=self.products_adder.run, args=()).start()
-
-        # Visualizacao dos frames no framework do Qt
-        self.scene = QGraphicsScene()
-        self.ui.graphics_view.setScene(self.scene)
-        self.pixmap = QGraphicsPixmapItem()
-        self.scene.addItem(self.pixmap)
+        self.production = Production()
 
         # Conexao dos signals e slots
         self.ui.start_vision_push_button.clicked.connect(
@@ -76,20 +59,34 @@ class MainWindow(QMainWindow):
         self.ui.turn_off_camera_push_button.clicked.connect(
             self.turn_off_camera_push_button_clicked)
 
+        self.vision_system.bind(new_product=self.add_product)
+        self.running = False
+        self.frames_reader = self.camera.create_frames_reader()
+
+        # Visualizacao dos frames no framework do Qt
+        self.scene = QGraphicsScene()
+        self.ui.graphics_view.setScene(self.scene)
+        self.pixmap = QGraphicsPixmapItem()
+        self.scene.addItem(self.pixmap)
+
+        # Configurações iniciais
+        self.set_product_types_list(
+            self.data_storager.get_product_types_names())
+
         self.show_frame_timer = QTimer()
         self.show_frame_timer.timeout.connect(
             self.show_frame)
 
     def stop(self):
         self.vision_system.stop()
-        self.products_adder.finish_works()
         self.show_frame_timer.stop()
         self.camera.close()
         self.data_storager.close_database()
 
-    def add_product(self, product_info: ProductInfo):
+    def add_product(self, product: Product):
         # Registrar no banco de dados
-        self.products_adder.put(product_info)
+        self.production.add(product)
+        self.update_offset_info_ui(product)
 
     def load_product_type(self, product_type_id):
         pass
@@ -127,6 +124,7 @@ class MainWindow(QMainWindow):
                     self.set_product_type(product_type_id)
 
     def start_vision_system(self):
+        # self.data_storager.start_production(self.current_product_type_id)
         self.vision_system.start(
             self.data_storager.get_product_type(
                 self.current_product_type_id).segmentation_info)
@@ -217,22 +215,20 @@ class MainWindow(QMainWindow):
             gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
             self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
 
-    def update_ui_oranges_info(self):
-        # Ultima laranja
-        formatted_diameter_text = '{:.2f}mm'.format(
-            self.data_writer.oranges[-1].diameter)
-        self.ui.last_diameter_label.setText(formatted_diameter_text)
+    def update_offset_info_ui(self, product: Product):
+        if product.has_cover:
+            self.ui.last_offset_label.setText(f'{product.offset:.2f}mm')
+        else:
+            self.ui.last_offset_label.setText('-')
 
-        # Media de todas as laranjas
-        formatted_diameter_text = '{:.2f}mm'.format(
-            self.data_writer.average_diameter)
-        self.average_color_label.setText(str(
-            self.data_writer.average_color.value))
-        self.average_diameter_label.setText(formatted_diameter_text)
+        # Média
+        self.ui.average_offset_label.setText(
+            f'{self.production.average_offset():.2f}mm')
 
-        # Numero total de laranjas
-        self.number_of_oranges_label.setText(
-            str(self.data_writer.quantity))
+        self.ui.number_of_products_label.setText(
+            str(self.production.quantity))
+        self.ui.no_cover_products_label.setText(
+            str(self.production.no_cover_quantity))
 
     def closeEvent(self, event):
         self.stop()

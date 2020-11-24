@@ -1,5 +1,5 @@
 # Author: Gabriel Dinse
-# File: ProductInfo
+# File: Product
 # Date: 11/1/2020
 # Made with PyCharm
 
@@ -14,7 +14,7 @@ import numpy as np
 # Local application imports
 
 @dataclass
-class ProductInfo:
+class Product:
     datetime_produced : str
     offset : float
     has_cover : bool
@@ -40,28 +40,26 @@ class ProductTypeName:
     name : str
 
 
-class WorkerQueue:
-    def __init__(self, callback, max_workers=0):
-        self.sentinel = object()
-        self.callback = callback
-        self.queue = Queue(maxsize=max_workers)
+class Production:
+    def __init__(self):
+        self.quantity = 0
+        self.no_cover_quantity = 0
+        self.total_offset = 0.0
 
-    def put(self, *args, **kwargs):
-        self.queue.put((args, kwargs))
+    def add(self, product: Product):
+        self.quantity += 1
+        self.total_offset += product.offset
+        if not product.has_cover:
+            self.no_cover_quantity += 1
 
-    def finish_works(self):
-        self.queue.put(self.sentinel)
+    def average_offset(self):
+        return self.total_offset \
+               / (self.quantity - self.no_cover_quantity)
 
-    def run(self):
-        while True:
-            try:
-                item = self.queue.get()
-                if item is self.sentinel:
-                    return
-                args, kwargs = item
-                self.callback(*args, **kwargs)
-            finally:
-                self.queue.task_done()  # Para o caso de multithreading
+    def reset(self):
+        self.quantity = 0
+        self.no_cover_quantity = 0
+        self.total_offset = 0.0
 
 
 def datetime_now_str():

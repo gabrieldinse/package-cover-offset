@@ -16,7 +16,8 @@ import cv2
 from skimage import img_as_ubyte
 
 # Local application imports
-from Miscellaneous.Helper import ProductType, SegmentationInfo
+from Miscellaneous.Helper import (ProductType, SegmentationInfo, Product,
+                                  datetime_now_str)
 from Miscellaneous.Events import VideoInfoEvents
 
 
@@ -24,7 +25,7 @@ class VideoInfoExtractor:
     def __init__(self, frames_reader):
         self.events = VideoInfoEvents()
         self.frames_reader = frames_reader
-        self.min_package_area = 0
+        self.min_package_area = 200
         self.max_package_area = 5000000
         self.max_template_value = 0.25
         self.scale_factor = 1
@@ -94,17 +95,18 @@ class VideoInfoExtractor:
             #     self.calculate_package_centroid()
             #     self.calculate_cover_centroid()  # Template matching
             #     self.calculate_offset()
-            start = time.time()
+
+            # start = time.time()
             self.get_convex_package()  # Convex hull
             self.calculate_package_centroid()
             self.calculate_cover_centroid()  # Template matching
             self.calculate_offset()
-            print(time.time() - start)
+            # print(time.time() - start)
 
     def get_convex_package(self):
         self.gray_frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2GRAY)
         blurred_gray_frame = cv2.GaussianBlur(
-            gray_frame,
+            self.gray_frame,
             (self.gaussian_kernel_size, self.gaussian_kernel_size), 0)
 
         canny_edges = cv2.Canny(
@@ -112,8 +114,9 @@ class VideoInfoExtractor:
         self.convex_hull = img_as_ubyte(convex_hull_image(canny_edges))
         contours, _ = cv2.findContours(self.convex_hull, cv2.RETR_TREE,
                                        cv2.CHAIN_APPROX_SIMPLE)
-        contour = contours[0]
-        self.x, self.y, self.w, self.h = cv2.boundingRect(contour)
+        if contours:
+            contour = contours[0]
+            self.x, self.y, self.w, self.h = cv2.boundingRect(contour)
         # cv2.imshow("test", convex_hull)
         # if cv2.waitKey(1) & 0xFF == ord('q'):
         #     return
@@ -123,9 +126,10 @@ class VideoInfoExtractor:
         #     return
 
     def calculate_package_centroid(self):
-        area = (self.convex_hull == 255).sum()
-        if self.min_package_area < area < self.max_package_area:
-            self.package_centroid, _ = np.argwhere(self.convex_hull == 255).sum(0) / area
+        package_area = (self.convex_hull == 255).sum()
+        if self.min_package_area <= package_area <= self.max_package_area:
+            self.package_centroid, _ = \
+                np.argwhere(self.convex_hull == 255).sum(0) / package_area
         else:
             self.package_centroid = None
 
@@ -162,12 +166,12 @@ class VideoInfoExtractor:
 
         self.cover_centroid = None
 
-    def cover_centroid_is_valid(self):
+    def has_cover(self):
         return self.cover_centroid is not None
 
     def can_calculate_offset(self):
         return (self.package_centroid_is_valid() and
-                self.cover_centroid_is_valid())
+                self.has_cover())
 
     def calculate_offset(self):
         if self.can_calculate_offset():
@@ -175,5 +179,6 @@ class VideoInfoExtractor:
                          * self.scale_factor
         else:
             offset = 0.0
-            print(offset)
-            # self.emit("new_product", ProductInfo(datetime_now_str(), offset, self.cover_centroid_is_valid()))
+        print(offset)
+        self.events.emit("new_product",
+                         Product(datetime_now_str(), offset, self.has_cover()))

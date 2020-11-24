@@ -59,7 +59,7 @@ border-width : 2px;
 border-style:solid;</string>
     </property>
     <property name="text">
-     <string>Cálculo offsets tampa</string>
+     <string>Produção de embalagens</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
@@ -545,7 +545,7 @@ border-style:solid;</string>
      <rect>
       <x>410</x>
       <y>80</y>
-      <width>311</width>
+      <width>366</width>
       <height>231</height>
      </rect>
     </property>
@@ -585,7 +585,7 @@ border-style:solid;</string>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="last_diameter_label">
+              <widget class="QLabel" name="last_offset_label">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
                  <horstretch>0</horstretch>
@@ -668,7 +668,7 @@ border-style:solid;</string>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="average_color_label">
+              <widget class="QLabel" name="average_offset_label">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
                  <horstretch>0</horstretch>
@@ -717,11 +717,53 @@ border-style:solid;</string>
       </layout>
      </item>
      <item>
+      <widget class="QLabel" name="label_15">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>300</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(235, 235, 235);
+color: rgb(50, 50, 50);
+border-color: rgb(100, 100, 100);
+border-width : 2px;
+border-style:solid;</string>
+       </property>
+       <property name="text">
+        <string>Produtos registrados</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
       <layout class="QHBoxLayout" name="horizontalLayout_23">
        <item>
         <widget class="QLabel" name="label_30">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -737,15 +779,15 @@ border-style:solid;</string>
           <string notr="true">color: rgb(50, 50, 50);</string>
          </property>
          <property name="text">
-          <string>Nº produtos registrados:</string>
+          <string>Quantidade:</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignCenter</set>
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="number_of_oranges_label">
+        <widget class="QLabel" name="number_of_products_label">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -780,6 +822,83 @@ border-style:solid;</string>
        </item>
        <item>
         <spacer name="horizontalSpacer_18">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_24">
+       <item>
+        <widget class="QLabel" name="label_32">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: rgb(50, 50, 50);</string>
+         </property>
+         <property name="text">
+          <string>Sem tampa:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="no_cover_products_label">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>60</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>60</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: rgb(50, 50, 50);
+</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_19">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -850,7 +969,7 @@ border-width : 2px;
 border-style:solid;</string>
     </property>
     <property name="text">
-     <string>Offsets</string>
+     <string>Deslocamento da tampa</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>

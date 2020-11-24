@@ -84,7 +84,7 @@ class DataStorager:
             if not cv2.imwrite(
                     os.path.join(self.template_path, f"{product_type_id}.png"),
                         product_type.template):
-                print("test")
+                raise FileError("Error when saving template file")
             return product_type_id
         else:
             pass
@@ -112,8 +112,9 @@ class DataStorager:
             ''')
             row = next(self.cursor)
             product_type_id = row[0]
-            template = cv2.imread(
-                os.path.join(self.template_path, f"{product_type_id}.png"))
+            if not (template := cv2.imread(
+                os.path.join(self.template_path, f"{product_type_id}.png"))):
+                raise FileError("Error when opening template file")
             product_type = ProductType(
                 row[0], SegmentationInfo(*row[1:]), template)
             return product_type

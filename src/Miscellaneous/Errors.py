@@ -13,6 +13,11 @@
 class Error(Exception):
     pass
 
+
+class FileError(Error):
+    pass
+
+
 class VideoError(Error):
     pass
 

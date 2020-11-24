@@ -187,7 +187,7 @@ class FramesReader:
         else:
             raise FrameReadingTimeout(
                 f"Error: Timeout of {timeout} second"
-                "{'s' if timeout > 1.0 else ''} exceeded when trying to read"
+                f"{'s' if timeout > 1.0 else ''} exceeded when trying to read"
                 " frame.")
 
     @property
