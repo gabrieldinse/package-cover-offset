@@ -105,14 +105,14 @@ class SyncedVideoStream:
         self.frames_readers = []
 
     @classmethod
-    def from_camera(cls, source_id, resolution=(640, 480)):
+    def from_camera(cls, source_id, resolution=(640, 350)):
         video_stream = cls()
         video_stream.stream = CameraVideoOutput(source_id, resolution)
         video_stream.initialized = True
         return video_stream
 
     @classmethod
-    def from_file(cls, filepath, repeat=True, resolution=(640, 480)):
+    def from_file(cls, filepath, repeat=True, resolution=(640, 350)):
         video_stream = cls()
         video_stream.stream = FileVideoOutput(filepath, repeat, resolution)
         video_stream.initialized = True
