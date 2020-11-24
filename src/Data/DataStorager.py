@@ -5,19 +5,22 @@
 
 # Standard Library
 import datetime
+import os
 
 # Third party modules
 import mysql.connector as mariadb
 import cv2
 
 # Local application imports
-from Miscellaneous.Helper import ProductInfo, SegmentationInfo, ProductType, ProductTypeName
+from Miscellaneous.Helper import Product, SegmentationInfo, ProductType, ProductTypeName
 
 
 class DataStorager:
-    def __init__(self):
+    def __init__(self, ):
         self.started = False
         self.database_opened = False
+        self.template_path = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "templates")
 
     def open_database(self):
         if not self.database_opened:
@@ -32,7 +35,14 @@ class DataStorager:
         else:
             pass
 
-    def start(self, product_type_id, production_id=None):
+    def close_database(self):
+        if self.database_opened:
+            self.cursor.close()
+            self.connection.close()
+        else:
+            pass
+
+    def start_production(self, product_type_id, production_id=None):
         if self.database_opened:
             if production_id is None:
                 start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -55,6 +65,9 @@ class DataStorager:
         else:
             pass
 
+    def stop_production(self):
+        self.started = False
+
     def add_product_type(self, product_type : ProductType):
         if self.database_opened:
             segmentation_info = product_type.segmentation_info
@@ -68,8 +81,10 @@ class DataStorager:
             ''')
             self.connection.commit()
             product_type_id = self.cursor.lastrowid
-            cv2.imwrite(f"Data/templates/{product_type_id}.png",
-                        product_type.template)
+            if not cv2.imwrite(
+                    os.path.join(self.template_path, f"{product_type_id}.png"),
+                        product_type.template):
+                print("test")
             return product_type_id
         else:
             pass
@@ -95,25 +110,26 @@ class DataStorager:
                 WHERE
                     Id = {product_type_id}
             ''')
-            row = list(self.cursor.__iter__())[0]
+            row = next(self.cursor)
             product_type_id = row[0]
-            template = cv2.imread(f"Data/templates/{product_type_id}.png")
+            template = cv2.imread(
+                os.path.join(self.template_path, f"{product_type_id}.png"))
             product_type = ProductType(
                 row[0], SegmentationInfo(*row[1:]), template)
             return product_type
         else:
             pass
 
-    def add_product(self, product_info : ProductInfo):
+    def add_product(self, product : Product):
         if self.database_opened:
             if self.started:
                 self.cursor.execute(f'''
                     INSERT INTO produto
                         (Offset, TemTampa, ProduzidoEm)
                     VALUES
-                        ({product_info.offset},
-                         {int(product_info.has_cover)},
-                         "{product_info.datetime_produced}")
+                        ({product.offset},
+                         {int(product.has_cover)},
+                         "{product.datetime_produced}")
                 ''')
                 product_id = self.cursor.lastrowid
 
@@ -127,15 +143,5 @@ class DataStorager:
                 return product_id
             else:
                 raise RuntimeError("Produção não foi iniciada ainda")
-        else:
-            pass
-
-    def stop(self):
-        self.started = False
-
-    def close_database(self):
-        if self.database_opened:
-            self.cursor.close()
-            self.connection.close()
         else:
             pass
