@@ -5,6 +5,7 @@
 
 # Standard Library
 import threading
+import time
 from contextlib import contextmanager
 
 # Third party modules
@@ -38,6 +39,14 @@ class VideoOutput:
         raise NotImplementedError()
 
     @property
+    def fps(self):
+        raise NotImplementedError()
+
+    @fps.setter
+    def fps(self, fps):
+        raise NotImplementedError()
+
+    @property
     def aspect_ratio(self):
         return self.width / self.height
 
@@ -47,10 +56,13 @@ class VideoOutput:
 
 
 class FileVideoOutput(VideoOutput):
-    def __init__(self, filepath, repeat, resolution):
+    def __init__(self, filepath, repeat, fps, resolution):
         super().__init__(resolution)
         self.filepath = filepath
         self.repeat = repeat
+        self.fps = fps
+        self.timer = time.time() + 1 / fps
+        self.opened = False
 
     def open(self):
         self.stream = cv2.VideoCapture(self.filepath)
@@ -59,15 +71,27 @@ class FileVideoOutput(VideoOutput):
         self.frame_count = self.stream.get(cv2.CAP_PROP_FRAME_COUNT)
 
     def read(self):
+        self.wait_for_next_frame()
         grabbed, frame = self.stream.read()
+        self.reset_timer()
         if not grabbed:
-            if self.repeat:
+            if self.stream.isOpened() and self.repeat:
                 self.current_frame_pos = 0
                 grabbed, frame = self.stream.read()
             else:
                 raise FrameReadingError(
                     "Error when reading frame from video file stream")
         return frame
+
+    def wait_for_next_frame(self):
+        while not self.read_timer_passed():
+            time.sleep(0.001)
+
+    def read_timer_passed(self):
+        return time.time() - self.timer >= 1 / self.fps
+
+    def reset_timer(self):
+        self.timer = time.time()
 
     @property
     def current_frame_pos(self):
@@ -77,11 +101,20 @@ class FileVideoOutput(VideoOutput):
     def current_frame_pos(self, value):
         self.stream.set(cv2.CAP_PROP_POS_FRAMES, value)
 
+    @property
+    def fps(self):
+        return self._fps
+
+    @fps.setter
+    def fps(self, fps):
+        self._fps = fps
+
 
 class CameraVideoOutput(VideoOutput):
-    def __init__(self, source_id, resolution):
+    def __init__(self, source_id, fps, resolution):
         super().__init__(resolution)
         self.source_id = source_id
+        self.fps = fps
 
     def open(self):
         self.stream = cv2.VideoCapture(self.source_id, cv2.CAP_DSHOW)
@@ -95,6 +128,14 @@ class CameraVideoOutput(VideoOutput):
                 "Error when reading frame from raw camera stream")
         return frame
 
+    @property
+    def fps(self):
+        return self.stream.get(cv2.CV_CAP_PROP_FPS)
+
+    @fps.setter
+    def fps(self, fps):
+        self.stream.set(cv2.CV_CAP_PROP_FPS, fps)
+
 
 class SyncedVideoStream:
     def __init__(self):
@@ -105,16 +146,16 @@ class SyncedVideoStream:
         self.frames_readers = []
 
     @classmethod
-    def from_camera(cls, source_id, resolution=(640, 350)):
+    def from_camera(cls, source_id, fps=30, resolution=(640, 480)):
         video_stream = cls()
-        video_stream.stream = CameraVideoOutput(source_id, resolution)
+        video_stream.stream = CameraVideoOutput(source_id, fps, resolution)
         video_stream.initialized = True
         return video_stream
 
     @classmethod
-    def from_file(cls, filepath, repeat=True, resolution=(640, 350)):
+    def from_file(cls, filepath, repeat=True, fps=30, resolution=(640, 480)):
         video_stream = cls()
-        video_stream.stream = FileVideoOutput(filepath, repeat, resolution)
+        video_stream.stream = FileVideoOutput(filepath, repeat, fps, resolution)
         video_stream.initialized = True
         return video_stream
 
@@ -143,13 +184,21 @@ class SyncedVideoStream:
             try:
                 frame = self.stream.read()
             except FrameReadingError:
-                raise
+                pass
             else:
                 with acquire_timeout(self.frame_lock, timeout=1.0) as acquired:
                     if acquired:
                         for frames_reader in self.frames_readers:
                             frames_reader.frame = frame.copy()
                             frames_reader.can_get_frame.set()
+
+    @property
+    def width(self):
+        return self.stream.width
+
+    @property
+    def height(self):
+        return self.stream.height
 
     @property
     def aspect_ratio(self):
@@ -189,6 +238,14 @@ class FramesReader:
                 f"Error: Timeout of {timeout} second"
                 f"{'s' if timeout > 1.0 else ''} exceeded when trying to read"
                 " frame.")
+
+    @property
+    def width(self):
+        return self.video_stream.width
+
+    @property
+    def height(self):
+        return self.video_stream.height
 
     @property
     def aspect_ratio(self):

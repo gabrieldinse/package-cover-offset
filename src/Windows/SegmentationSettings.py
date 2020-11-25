@@ -65,6 +65,8 @@ class SegmentationSettings(QDialog):
             self.segment_and_show_frame)
         self.show_frame_timer.start(50)
 
+
+
     def initialize_ui_values(self, segmentation_info):
         if segmentation_info is None:
             self.lower_canny = 0
@@ -78,45 +80,43 @@ class SegmentationSettings(QDialog):
         self.ui.gaussian_kernel_spin_box.setValue(self.gaussian_kernel_size)
 
     def segment_and_show_frame(self):
-        try:
-            frame = self.frames_reader.read()
-        except FrameReadingError:
-            raise
-        else:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            height, width, _ = frame.shape
-            bytes_per_line = 3 * width
+        frame = cv2.imread("../Vision/resources/frame.jpg", 1)
+        # frame = self.frames_reader.read()
 
-            # Segmentação por Canny e Convex hull
-            gray_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-            blurred_gray_frame = cv2.GaussianBlur(
-                gray_frame,
-                (self.gaussian_kernel_size, self.gaussian_kernel_size), 0)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        height, width, _ = frame.shape
+        bytes_per_line = 3 * width
 
-            self.calculate_canny_threshold(blurred_gray_frame)
-            canny_edges = cv2.Canny(
-                blurred_gray_frame, self.lower_canny, self.upper_canny)
-            convex_hull = img_as_ubyte(convex_hull_image(canny_edges))
+        # Segmentação por Canny e Convex hull
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+        blurred_gray_frame = cv2.GaussianBlur(
+            gray_frame,
+            (self.gaussian_kernel_size, self.gaussian_kernel_size), 0)
 
-            contours, _ = cv2.findContours(convex_hull, cv2.RETR_TREE,
-                                           cv2.CHAIN_APPROX_SIMPLE)
-            if contours:
-                contour = contours[0]
-                cv2.drawContours(frame, [contour], 0, (0, 255, 0), 2)
+        self.calculate_canny_threshold(blurred_gray_frame)
+        canny_edges = cv2.Canny(
+            blurred_gray_frame, self.lower_canny, self.upper_canny)
+        convex_hull = img_as_ubyte(convex_hull_image(canny_edges))
 
-            # Mostra o frame original com o contorno  da embalagem
-            gui_frame = QImage(frame.data, width, height,
-                               bytes_per_line, QImage.Format_RGB888)
-            gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
-            self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
+        contours, _ = cv2.findContours(convex_hull, cv2.RETR_TREE,
+                                       cv2.CHAIN_APPROX_SIMPLE)
+        if contours:
+            contour = contours[0]
+            cv2.drawContours(frame, [contour], 0, (0, 255, 0), 2)
 
-            # Mostra o frame segmentado
-            segmented_gui_frame = QImage(
-                convex_hull.data, width, height, QImage.Format_Grayscale8)
-            segmented_gui_frame = segmented_gui_frame.scaled(
-                470, 470, Qt.KeepAspectRatio)
-            self.segmentation_pixmap.setPixmap(
-                QPixmap.fromImage(segmented_gui_frame))
+        # Mostra o frame original com o contorno  da embalagem
+        gui_frame = QImage(frame.data, width, height,
+                           bytes_per_line, QImage.Format_RGB888)
+        gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
+        self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
+
+        # Mostra o frame segmentado
+        segmented_gui_frame = QImage(
+            convex_hull.data, width, height, QImage.Format_Grayscale8)
+        segmented_gui_frame = segmented_gui_frame.scaled(
+            470, 470, Qt.KeepAspectRatio)
+        self.segmentation_pixmap.setPixmap(
+            QPixmap.fromImage(segmented_gui_frame))
 
     def calculate_canny_threshold(self, gray_frame):
         if self.ui.otsu_radio_button.isChecked():

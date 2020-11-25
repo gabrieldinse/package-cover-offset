@@ -113,7 +113,7 @@ class DataStorager:
             ''')
             row = next(self.cursor)
             template = cv2.imread(
-                os.path.join(self.template_path, f"{product_type_id}.png"))
+                os.path.join(self.template_path, f"{product_type_id}.png"), 0)
             if template is None:
                 raise TemplateReadingError("Error when opening template file")
             product_type = ProductType(
@@ -124,7 +124,7 @@ class DataStorager:
 
     def add_product(self, product : Product):
         if self.database_opened:
-            if self.started:
+            if self.production_started:
                 self.cursor.execute(f'''
                     INSERT INTO produto
                         (Offset, TemTampa, ProduzidoEm)
@@ -138,8 +138,8 @@ class DataStorager:
                 self.cursor.execute(f'''
                     INSERT INTO produto_producao
                         (IdProducao, IdProduto)
-                    VALUES 
-                        ({self.production_id}, {self.last_product_id})
+                    VALUES
+                        ({self.production_id}, {product_id})
                 ''')
                 self.connection.commit()
                 return product_id

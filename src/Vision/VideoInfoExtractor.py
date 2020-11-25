@@ -16,49 +16,37 @@ import cv2
 from skimage import img_as_ubyte
 
 # Local application imports
+from Vision.SyncedVideoStream import FramesReader
 from Miscellaneous.Helper import (ProductType, SegmentationInfo, Product,
                                   datetime_now_str)
 from Miscellaneous.Events import VideoInfoEvents
 
 
 class VideoInfoExtractor:
-    def __init__(self, frames_reader):
+    def __init__(self, frames_reader: FramesReader):
         self.events = VideoInfoEvents()
-        self.frames_reader = frames_reader
-        self.min_package_area = 200
-        self.max_package_area = 5000000
-        self.max_template_value = 0.25
-        self.scale_factor = 1
-        self.threshold_position = 0
-        self.template_matching_method = cv2.TM_SQDIFF_NORMED
-        self.new_package_delay = 1.5
 
-        # TEMPORARIO SUPER
-        self.frame = cv2.imread("../Images/pc1.jpg", 1)
-        height, width, _ = self.frame.shape
-        scale_x = 480 / width
-        scale_y = 640 / height
-        self.frame = imutils.resize(self.frame, width=int(self.frame.shape[1] * scale_x),
-                                    height=int(self.frame.shape[0] * scale_y))
-        self.template = cv2.imread("../Images/template.jpg", 0)
-        self.template = imutils.resize(self.template, width=int(self.template.shape[1] * scale_x),
-                                    height=int(self.template.shape[0] * scale_y))
-        self.gaussian_kernel_size = 5
-        self.lower_canny = 100
-        self.upper_canny = 200
+        self.frames_reader = frames_reader
+        self.min_package_area = 55000
+        self.max_package_area = 90000
+        self.max_template_matching = 0.25
+        self.scale_factor = 1
+        self.min_package_centroid_pos = int(self.frames_reader.width * 0.5)
+        self.template_matching_method = cv2.TM_SQDIFF_NORMED
+        self.new_package_delay = 1.0
 
         self.running = False
 
     def bind(self, **kwargs):
         self.events.bind(**kwargs)
 
-    def load_product_type(self, product_type : ProductType):
-        pass
-
-    def start(self, segmentation_info: SegmentationInfo):
+    def start(self, product_type : ProductType):
         if not self.running:
-            self.segmentation_info = segmentation_info
-            self.current_capture_time = time.time() + self.new_package_delay
+            self.template = product_type.template
+            self.gaussian_kernel_size = product_type.segmentation_info.gaussian_filter_size
+            self.lower_canny = product_type.segmentation_info.lower_canny
+            self.upper_canny = product_type.segmentation_info.upper_canny
+            self.current_capture_time = time.time() - self.new_package_delay
             self.running = True
             self.thread = Thread(target=self.run, args=())
             self.thread.start()
@@ -70,21 +58,18 @@ class VideoInfoExtractor:
 
     def run(self):
         while self.running:
-            # try:
-            #     self.frame = self.frames_reader.read()
-            # except FrameReadingError:
-            #     pass
-            # else:
-
-            # start = time.time()
-            if self.capture_time_passed():
-                self.reset_capture_timer()
-                self.get_convex_package()  # Convex hull
-                self.calculate_package_centroid()
-                if self.is_package_centroid_in_place():
-                    self.calculate_cover_centroid()  # Template matching
-                    self.calculate_offset()
-            # print(time.time() - start)
+            try:
+                self.frame = self.frames_reader.read()
+            except FrameReadingError:
+                pass
+            else:
+                if self.capture_time_passed():
+                    self.get_convex_package()  # Convex hull
+                    self.calculate_package_centroid()
+                    if self.is_package_centroid_in_place():
+                        print(self.package_centroid)
+                        self.calculate_cover_centroid()  # Template matching
+                        self.calculate_offset()
 
     def capture_time_passed(self):
         return time.time() - self.current_capture_time >= self.new_package_delay
@@ -101,34 +86,27 @@ class VideoInfoExtractor:
         canny_edges = cv2.Canny(
             blurred_gray_frame, self.lower_canny, self.upper_canny)
         self.convex_hull = img_as_ubyte(convex_hull_image(canny_edges))
-        contours, _ = cv2.findContours(self.convex_hull, cv2.RETR_TREE,
-                                       cv2.CHAIN_APPROX_SIMPLE)
-        if contours:
-            contour = contours[0]
-            self.x, self.y, self.w, self.h = cv2.boundingRect(contour)
-        # cv2.imshow("test", convex_hull)
-        # if cv2.waitKey(1) & 0xFF == ord('q'):
-        #     return
-        # self.convex_hull = self.convex_hull[self.y:self.y+self.h,self.x:self.x+self.w]
-        # cv2.imshow("test kkk", gray_frame[self.y:self.y+self.h,self.x:self.x+self.w])
-        # if cv2.waitKey(1) & 0xFF == ord('q'):
-        #     return
 
     def calculate_package_centroid(self):
         package_area = (self.convex_hull == 255).sum()
+        print((self.convex_hull == 255).sum())
         if self.min_package_area <= package_area <= self.max_package_area:
-            self.package_centroid, _ = \
+            _, self.package_centroid = \
                 np.argwhere(self.convex_hull == 255).sum(0) / package_area
+            self.reset_capture_timer()
         else:
             self.package_centroid = None
 
     def is_package_centroid_in_place(self):
         return (self.package_centroid is not None
-                and self.package_centroid >= self.threshold_position)
+                and self.package_centroid >= self.min_package_centroid_pos)
 
     def calculate_cover_centroid(self):
+        cv2.imshow("test", self.convex_hull)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            return
         best_match = None
-        for scale in np.linspace(0.9, 1.1, 5):
+        for scale in np.linspace(0.8, 1.2, 9):
             for orientation in ["0", "180"]:
                 resized_template = imutils.resize(
                     self.template, width=int(self.template.shape[1] * scale))
@@ -140,16 +118,17 @@ class VideoInfoExtractor:
                         resized_template, rotation, (h, w))
 
                 similarity = cv2.matchTemplate(
-                    self.gray_frame[self.y:self.y+self.h,self.x:self.x+self.w],
-                    resized_template, self.template_matching_method)
+                    self.gray_frame, resized_template,
+                    self.template_matching_method)
                 min_value, _, min_location, _ = cv2.minMaxLoc(similarity)
 
                 if best_match is None or min_value < best_match[0]:
                     best_match = (min_value, min_location, scale)
 
-        if best_match[0] < self.max_template_value:
+        if best_match[0] < self.max_template_matching:
             h, w = self.template.shape
-            self.cover_centroid = best_match[1][1] + best_match[2] * h / 2
+            self.cover_centroid = best_match[1][0] + best_match[2] * w / 2
+            print(self.cover_centroid)
         else:
             self.cover_centroid = None
 

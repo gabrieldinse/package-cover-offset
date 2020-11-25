@@ -150,20 +150,18 @@ class TemplatePicking(QDialog):
         msg_box.exec()
 
     def show_frame(self):
-        try:
-            frame = self.frames_reader.read()
-        except FrameReadingError:
-            raise
-        else:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            height, width, _ = frame.shape
-            bytes_per_line = 3 * width
+        frame = cv2.imread("../Vision/resources/frame.jpg", 1)
 
-            # Frame segmentado
-            gui_frame = QImage(frame.data, width, height,
-                               bytes_per_line, QImage.Format_RGB888)
-            gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
-            self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
+        # frame = self.frames_reader.read()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        height, width, _ = frame.shape
+        bytes_per_line = 3 * width
+
+        # Frame segmentado
+        gui_frame = QImage(frame.data, width, height,
+                           bytes_per_line, QImage.Format_RGB888)
+        gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
+        self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
 
     def get_template(self):
         return self.frame[
@@ -184,7 +182,8 @@ class TemplatePicking(QDialog):
     def finish_push_button_clicked(self):
         self.show_frame_timer.stop()
         try:
-            self.frame = self.frames_reader.read()
+            # self.frame = self.frames_reader.read()
+            self.frame = cv2.imread("../Vision/resources/frame.jpg", 1)
         except FrameReadingError:
             raise
         else:
