@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 # Local
-src/Data/templates/
+Sources/Data/templates/
 
 # C extensions
 *.so

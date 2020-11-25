@@ -1,6 +1,6 @@
 
 import sys
-import minimalmodbus    
+import minimalmodbus
 
 info1 = 100 
 info2 = 102
