@@ -53,8 +53,11 @@ class Production:
             self.no_cover_quantity += 1
 
     def average_offset(self):
-        return self.total_offset \
-               / (self.quantity - self.no_cover_quantity)
+        if self.no_cover_quantity == self.quantity:
+            return 0.0
+        else:
+            return self.total_offset \
+                   / (self.quantity - self.no_cover_quantity)
 
     def reset(self):
         self.quantity = 0

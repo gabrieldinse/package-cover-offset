@@ -4,24 +4,37 @@
 # Made with PyCharm
 
 # Standard Library
+from ftplib import FTP
 import datetime
 import os
+import io
 
 # Third party modules
 import mysql.connector as mariadb
 import cv2
+import numpy as np
 
 # Local application imports
 from Miscellaneous.Helper import (Product, SegmentationInfo, ProductType,
                                   ProductTypeName)
 from Miscellaneous.Errors import TemplateReadingError, TemplateWritingError
 
+
+
+class TemplateFromBytes:
+    def __init__(self):
+        self.data = b""
+
+    def __call__(self, data):
+        self.data += data
+
+
 class DataStorager:
     def __init__(self, ):
         self.started = False
         self.database_opened = False
         self.template_path = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "templates")
+            os.path.dirname(os.path.realpath(__file__)), "Templates")
 
     def open_database(self):
         if not self.database_opened:
@@ -35,6 +48,11 @@ class DataStorager:
             self.database_opened = True
         else:
             pass
+
+    def login_to_ftp(self):
+        self.ftp_client = FTP("127.0.0.1")
+        self.ftp_client.login(user="admin", passwd="admin")
+        self.ftp_client.cwd("/")
 
     def close_database(self):
         if self.database_opened:
@@ -82,10 +100,12 @@ class DataStorager:
             ''')
             self.connection.commit()
             product_type_id = self.cursor.lastrowid
-            if not cv2.imwrite(
-                    os.path.join(self.template_path, f"{product_type_id}.png"),
-                        product_type.template):
-                raise FileWritingError("Error when saving template file")
+
+            success, buffer_array = cv2.imencode(".png", product_type.template)
+            template_bytes = buffer_array.tobytes()
+            self.ftp_client.storbinary(
+                "STOR " + f"{product_type_id}.png", io.BytesIO(template_bytes))
+
             return product_type_id
         else:
             pass
@@ -112,10 +132,15 @@ class DataStorager:
                     Id = {product_type_id}
             ''')
             row = next(self.cursor)
-            template = cv2.imread(
-                os.path.join(self.template_path, f"{product_type_id}.png"), 0)
-            if template is None:
-                raise TemplateReadingError("Error when opening template file")
+
+            template_from_bytes = TemplateFromBytes()
+            self.ftp_client.retrbinary(
+                "RETR " + f"{product_type_id}.png", template_from_bytes)
+            template = cv2.imdecode(
+                np.frombuffer(
+                    template_from_bytes.data, dtype=np.uint8),
+                cv2.IMREAD_GRAYSCALE)
+
             product_type = ProductType(
                 row[0], SegmentationInfo(*row[1:]), template)
             return product_type

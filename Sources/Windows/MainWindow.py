@@ -24,8 +24,6 @@ from Data.DataStorager import DataStorager
 from Vision.SyncedVideoStream import SyncedVideoStream
 from Vision.VideoInfoExtractor import VideoInfoExtractor
 
-from ModBus.ModbusConnector import ModbusConnector
-
 from Miscellaneous.Helper import ProductType, ProductTypeName, Product, Production
 from Miscellaneous.Errors import FrameReadingError, TemplateReadingError
 
@@ -41,9 +39,9 @@ class MainWindow(QMainWindow):
             "../Vision/Resources/video_loop.mp4", resolution=(640, 350))
         self.data_storager = DataStorager()
         self.data_storager.open_database()
+        self.data_storager.login_to_ftp()
         self.vision_system = VideoInfoExtractor(
             self.camera.create_frames_reader())
-        self.modbus_connector = ModbusConnector()
 
         # Sistema auxiliar
         self.production = Production()
@@ -155,7 +153,7 @@ class MainWindow(QMainWindow):
         self.camera.close()
 
     def add_product(self, product: Product):
-        self.modbus_connector.send_offset(product.offset)
+        # self.modbus_connector.send_offset(product.offset)
         self.data_storager.add_product(product)
         self.production.add(product)
         self.update_offset_info_ui(product)
