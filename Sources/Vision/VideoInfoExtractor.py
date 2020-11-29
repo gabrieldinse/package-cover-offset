@@ -27,13 +27,14 @@ class VideoInfoExtractor:
         self.events = VideoInfoEvents()
 
         self.frames_reader = frames_reader
-        self.min_package_area = 55000
-        self.max_package_area = 90000
-        self.max_template_matching = 0.25
-        self.scale_factor = 1
-        self.min_package_centroid_pos = int(self.frames_reader.width * 0.5)
-        self.template_matching_method = cv2.TM_SQDIFF_NORMED
+        self.min_package_area = 50000
+        self.max_package_area = 62000
+        self.max_template_matching = 0.10
+        self.scale_factor = 0.573
         self.new_package_delay = 1.0
+        self.min_package_centroid_pos = int(self.frames_reader.width * 0.30)
+        self.max_package_centroid_pos = int(self.frames_reader.width * 0.65)
+        self.template_matching_method = cv2.TM_SQDIFF_NORMED
 
         self.running = False
 
@@ -67,7 +68,6 @@ class VideoInfoExtractor:
                     self.get_convex_package()  # Convex hull
                     self.calculate_package_centroid()
                     if self.is_package_centroid_in_place():
-                        print(self.package_centroid)
                         self.calculate_cover_centroid()  # Template matching
                         self.calculate_offset()
 
@@ -89,7 +89,6 @@ class VideoInfoExtractor:
 
     def calculate_package_centroid(self):
         package_area = (self.convex_hull == 255).sum()
-        print((self.convex_hull == 255).sum())
         if self.min_package_area <= package_area <= self.max_package_area:
             _, self.package_centroid = \
                 np.argwhere(self.convex_hull == 255).sum(0) / package_area
@@ -99,12 +98,10 @@ class VideoInfoExtractor:
 
     def is_package_centroid_in_place(self):
         return (self.package_centroid is not None
-                and self.package_centroid >= self.min_package_centroid_pos)
+                and self.min_package_centroid_pos < self.package_centroid
+                and self.max_package_centroid_pos > self.package_centroid)
 
     def calculate_cover_centroid(self):
-        cv2.imshow("test", self.convex_hull)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            return
         best_match = None
         for scale in np.linspace(0.8, 1.2, 9):
             for orientation in ["0", "180"]:
@@ -128,7 +125,6 @@ class VideoInfoExtractor:
         if best_match[0] < self.max_template_matching:
             h, w = self.template.shape
             self.cover_centroid = best_match[1][0] + best_match[2] * w / 2
-            print(self.cover_centroid)
         else:
             self.cover_centroid = None
 

@@ -7,8 +7,7 @@
 
 # Third party modules
 from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
-                             QDialog, QGraphicsLineItem,
-                             QMessageBox)
+                             QDialog, QGraphicsLineItem, QMessageBox)
 from PyQt5.QtGui import QImage, QPixmap, QPen
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 import cv2

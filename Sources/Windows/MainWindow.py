@@ -36,7 +36,7 @@ class MainWindow(QMainWindow):
 
         # Systemas principais da aplicação
         self.camera = SyncedVideoStream.from_file(
-            "../Vision/Resources/video_loop.mp4", resolution=(640, 350))
+            "../Vision/Resources/video_loop.mp4", resolution=(640, 360))
         self.data_storager = DataStorager()
         self.data_storager.open_database()
         self.data_storager.login_to_ftp_server()
@@ -81,7 +81,7 @@ class MainWindow(QMainWindow):
         self.show_frame_timer = QTimer()
         self.show_frame_timer.timeout.connect(
             self.show_frame)
-        self.show_frame_timeout = 50
+        self.show_frame_timeout = 65
 
     def stop(self):
         self.vision_system.stop()
@@ -219,7 +219,7 @@ class MainWindow(QMainWindow):
         if product.has_cover:
             self.ui.last_offset_label.setText(f'{product.offset:.1f}mm')
         else:
-            self.ui.last_offset_label.setText('-')
+            self.ui.last_offset_label.setText('Sem tampa')
 
         # Média
         self.ui.average_offset_label.setText(

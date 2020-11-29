@@ -80,8 +80,8 @@ class SegmentationSettings(QDialog):
         self.ui.gaussian_kernel_spin_box.setValue(self.gaussian_kernel_size)
 
     def segment_and_show_frame(self):
-        frame = cv2.imread("../Vision/Resources/frame.jpg", 1)
-        # frame = self.frames_reader.read()
+        # frame = cv2.imread("../Vision/Resources/frame.jpg", 1)
+        frame = self.frames_reader.read()
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, _ = frame.shape
@@ -124,6 +124,9 @@ class SegmentationSettings(QDialog):
                 gray_frame, 0, 255,
                 cv2.THRESH_BINARY + cv2.THRESH_OTSU)
             self.lower_canny = 0.5 * self.upper_canny
+        else:
+            self.lower_canny = self.ui.lower_canny_slider.value()
+            self.upper_canny = self.ui.upper_canny_slider.value()
 
     def get_segmentation_info(self):
         return SegmentationInfo(self.lower_canny, self.upper_canny,

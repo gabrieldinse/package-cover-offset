@@ -73,7 +73,7 @@ class FileVideoOutput(VideoOutput):
     def read(self):
         self.wait_for_next_frame()
         grabbed, frame = self.stream.read()
-        self.reset_timer()
+
         if not grabbed:
             if self.stream.isOpened() and self.repeat:
                 self.current_frame_pos = 0
@@ -86,12 +86,10 @@ class FileVideoOutput(VideoOutput):
     def wait_for_next_frame(self):
         while not self.read_timer_passed():
             time.sleep(0.001)
+        sself.timer = time.time()
 
     def read_timer_passed(self):
         return time.time() - self.timer >= 1 / self.fps
-
-    def reset_timer(self):
-        self.timer = time.time()
 
     @property
     def current_frame_pos(self):
