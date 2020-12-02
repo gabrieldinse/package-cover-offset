@@ -55,3 +55,16 @@ class FrameReadingTimeout(FramesReaderError):
 
 class FramesReaderNotStartedError(FramesReaderError):
     pass
+
+
+class DataStoragerError(Error):
+    pass
+
+class NotLoggedInToFTPServerError(DataStoragerError):
+    pass
+
+class DatabaseNotOpenedError(DataStoragerError):
+    pass
+
+class ProductionNotStartedError(DataStoragerError):
+    pass

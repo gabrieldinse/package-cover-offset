@@ -21,7 +21,7 @@ from Windows.UI.SegmentationSettingsUi import Ui_Dialog
 
 class SegmentationSettings(QDialog):
     def __init__(self, window_name, frames_reader,
-                 segmentation_info=None, parent=None):
+                 segmentation_info, parent=None):
         super().__init__(parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -65,15 +65,16 @@ class SegmentationSettings(QDialog):
             self.segment_and_show_frame)
         self.show_frame_timer.start(50)
 
-
-
-    def initialize_ui_values(self, segmentation_info):
+    def initialize_ui_values(self, segmentation_info: SegmentationInfo):
         if segmentation_info is None:
             self.lower_canny = 0
             self.upper_canny = 255
             self.gaussian_kernel_size = 5
         else:
-            pass
+            self.lower_canny = segmentation_info.lower_canny
+            self.upper_canny = segmentation_info.upper_canny
+            self.gaussian_kernel_size = segmentation_info.gaussian_filter_size
+            self.ui.manual_radio_button.setChecked(True)
 
         self.ui.lower_canny_slider.setValue(self.lower_canny)
         self.ui.upper_canny_slider.setValue(self.upper_canny)

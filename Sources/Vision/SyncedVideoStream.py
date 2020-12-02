@@ -86,7 +86,7 @@ class FileVideoOutput(VideoOutput):
     def wait_for_next_frame(self):
         while not self.read_timer_passed():
             time.sleep(0.001)
-        sself.timer = time.time()
+        self.timer = time.time()
 
     def read_timer_passed(self):
         return time.time() - self.timer >= 1 / self.fps

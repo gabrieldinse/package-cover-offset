@@ -16,7 +16,7 @@ import numpy as np
 @dataclass
 class Product:
     datetime_produced : str
-    offset : float
+    offset : int
     has_cover : bool
 
 
@@ -44,7 +44,7 @@ class Production:
     def __init__(self):
         self.quantity = 0
         self.no_cover_quantity = 0
-        self.total_offset = 0.0
+        self.total_offset = 0
 
     def add(self, product: Product):
         self.quantity += 1
@@ -54,7 +54,7 @@ class Production:
 
     def average_offset(self):
         if self.no_cover_quantity == self.quantity:
-            return 0.0
+            return 0
         else:
             return self.total_offset \
                    / (self.quantity - self.no_cover_quantity)
@@ -62,7 +62,7 @@ class Production:
     def reset(self):
         self.quantity = 0
         self.no_cover_quantity = 0
-        self.total_offset = 0.0
+        self.total_offset = 0
 
 
 def datetime_now_str():

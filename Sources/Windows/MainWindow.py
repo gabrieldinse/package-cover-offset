@@ -24,7 +24,8 @@ from Data.DataStorager import DataStorager
 from Vision.SyncedVideoStream import SyncedVideoStream
 from Vision.VideoInfoExtractor import VideoInfoExtractor
 
-from Miscellaneous.Helper import ProductType, ProductTypeName, Product, Production
+from Miscellaneous.Helper import (ProductType, ProductTypeName, Product,
+                                  Production, SegmentationInfo)
 from Miscellaneous.Errors import FrameReadingError, TemplateReadingError
 
 
@@ -55,8 +56,6 @@ class MainWindow(QMainWindow):
             self.register_product_push_button_clicked)
         self.ui.edit_product_push_button.clicked.connect(
             self.edit_product_push_button_clicked)
-        self.ui.test_push_button.clicked.connect(
-            self.test_push_button_clicked)
         self.ui.product_type_combo_box.currentIndexChanged.connect(
             self.product_type_combo_box_index_changed)
         self.ui.turn_on_camera_push_button.clicked.connect(
@@ -121,6 +120,7 @@ class MainWindow(QMainWindow):
         self.ui.turn_on_camera_push_button.setDisabled(True)
         self.ui.turn_off_camera_push_button.setEnabled(True)
         self.ui.register_product_push_button.setEnabled(True)
+        self.ui.edit_product_push_button.setEnabled(True)
         self.show_frame_timer.start(self.show_frame_timeout)
         self.ui.camera_state_label.setText('ON')
         self.ui.camera_state_label.setStyleSheet(
@@ -135,7 +135,6 @@ class MainWindow(QMainWindow):
         self.ui.turn_on_camera_push_button.setEnabled(True)
         self.ui.register_product_push_button.setDisabled(True)
         self.ui.edit_product_push_button.setDisabled(True)
-        self.ui.test_push_button.setDisabled(True)
         self.show_frame_timer.stop()
 
         white_image = QImage(
@@ -166,27 +165,43 @@ class MainWindow(QMainWindow):
             self, "Nome do produto", "Nome do produto",
             QLineEdit.Normal, "")
         if ok_clicked and product_name:
-            segmentation_dialog = SegmentationSettings(
-                product_name, self.camera.create_frames_reader(), parent=self)
-            segmentation_dialog.exec()
+            product_type = self.setup_vision_settings(product_name)
+            if product_type is not None:
+                product_type_id = self.data_storager.add_product_type(
+                    product_type)
+                self.set_product_types_list(
+                    self.data_storager.get_product_types_names())
+                self.set_product_type(product_type_id)
 
-            if segmentation_dialog.closed_for_next_step:
-                segmentation_info = segmentation_dialog.get_segmentation_info()
+    def edit_selected_product(self):
+        product_type = self.data_storager.get_product_type(
+            self.current_product_type_id)
+        product_type = self.setup_vision_settings(product_type.name,
+            product_type.segmentation_info)
+        if product_type is not None:
+            self.data_storager.edit_product_type(
+                self.current_product_type_id, product_type)
 
-                template_dialog = TemplatePicking(
-                    product_name, self.camera.create_frames_reader(), parent=self)
-                template_dialog.exec()
+    def setup_vision_settings(self, product_name,
+                              segmentation_info: SegmentationInfo=None):
+        segmentation_dialog = SegmentationSettings(
+            product_name, self.camera.create_frames_reader(),
+            segmentation_info)
+        segmentation_dialog.exec()
 
-                if template_dialog.closed_for_next_step:
-                    template = template_dialog.get_template()
+        if segmentation_dialog.closed_for_next_step:
+            segmentation_info = segmentation_dialog.get_segmentation_info()
 
-                    product_type = ProductType(
-                            product_name, segmentation_info, template)
-                    product_type_id = self.data_storager.add_product_type(
-                        product_type)
-                    self.set_product_types_list(
-                        self.data_storager.get_product_types_names())
-                    self.set_product_type(product_type_id)
+            template_dialog = TemplatePicking(
+                product_name, self.camera.create_frames_reader())
+            template_dialog.exec()
+
+            if template_dialog.closed_for_next_step:
+                template = template_dialog.get_template()
+
+                return ProductType(
+                    product_name, segmentation_info, template)
+        return None
 
     def set_product_types_list(
             self, product_type_names: Sequence[ProductTypeName]):
@@ -242,10 +257,7 @@ class MainWindow(QMainWindow):
         self.current_product_type_id = self.ui.product_type_combo_box.itemData(index)
 
     def edit_product_push_button_clicked(self):
-        pass
-
-    def test_push_button_clicked(self):
-        pass
+        self.edit_selected_product()
 
     def start_vision_push_button_clicked(self):
         self.start_vision_system()

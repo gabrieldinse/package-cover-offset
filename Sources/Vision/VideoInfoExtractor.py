@@ -98,8 +98,8 @@ class VideoInfoExtractor:
 
     def is_package_centroid_in_place(self):
         return (self.package_centroid is not None
-                and self.min_package_centroid_pos < self.package_centroid
-                and self.max_package_centroid_pos > self.package_centroid)
+                and self.min_package_centroid_pos < self.package_centroid <
+                self.max_package_centroid_pos)
 
     def calculate_cover_centroid(self):
         best_match = None
@@ -133,9 +133,10 @@ class VideoInfoExtractor:
 
     def calculate_offset(self):
         if self.has_cover():
-            offset = (self.cover_centroid - self.package_centroid) \
-                         * self.scale_factor
+            offset = int(
+                (self.cover_centroid - self.package_centroid)
+                * self.scale_factor)
         else:
-            offset = 0.0
+            offset = 0
         self.events.emit("new_product",
                          Product(datetime_now_str(), offset, self.has_cover()))
