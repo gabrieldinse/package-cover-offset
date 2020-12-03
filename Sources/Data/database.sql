@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS `producao` (
   `Id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `IniciadaEm` datetime DEFAULT NULL,
   PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=92 DEFAULT CHARSET=latin1;
 
 -- Data exporting was unselected.
 
@@ -40,11 +40,11 @@ CREATE TABLE IF NOT EXISTS `producao_tipo_produto` (
 -- Dumping structure for table controle_producao.produto
 CREATE TABLE IF NOT EXISTS `produto` (
   `Id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `Offset` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `Offset` int(11) NOT NULL DEFAULT 0,
   `ProduzidoEm` datetime DEFAULT NULL,
   `TemTampa` tinyint(4) DEFAULT NULL,
   PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=306 DEFAULT CHARSET=latin1;
 
 -- Data exporting was unselected.
 
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS `tipo_produto` (
   `UpperCanny` int(10) unsigned NOT NULL DEFAULT 0,
   `FiltroGaussiano` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=latin1;
 
 -- Data exporting was unselected.
 
