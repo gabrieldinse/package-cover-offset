@@ -24,6 +24,8 @@ from Data.DataStorager import DataStorager
 from Vision.SyncedVideoStream import SyncedVideoStream
 from Vision.VideoInfoExtractor import VideoInfoExtractor
 
+from ModBus.ModbusConnector import ModbusConnector
+
 from Miscellaneous.Helper import (ProductType, ProductTypeName, Product,
                                   Production, SegmentationInfo)
 from Miscellaneous.Errors import FrameReadingError, TemplateReadingError
@@ -43,6 +45,7 @@ class MainWindow(QMainWindow):
         self.data_storager.login_to_ftp_server()
         self.vision_system = VideoInfoExtractor(
             self.camera.create_frames_reader())
+        self.modbus_connector = ModbusConnector()
 
         # Sistema auxiliar
         self.production = Production()
@@ -152,13 +155,10 @@ class MainWindow(QMainWindow):
         self.camera.close()
 
     def add_product(self, product: Product):
-        # self.modbus_connector.send_offset(product.offset)
+        self.modbus_connector.send_offset(product.offset)
         self.data_storager.add_product(product)
         self.production.add(product)
         self.update_offset_info_ui(product)
-
-    def edit_product_type(self, product_type_id, product_type):
-        pass
 
     def register_product(self):
         product_name, ok_clicked = QInputDialog().getText(
@@ -173,11 +173,11 @@ class MainWindow(QMainWindow):
                     self.data_storager.get_product_types_names())
                 self.set_product_type(product_type_id)
 
-    def edit_selected_product(self):
+    def edit_product_type(self):
         product_type = self.data_storager.get_product_type(
             self.current_product_type_id)
         product_type = self.setup_vision_settings(product_type.name,
-            product_type.segmentation_info)
+                                                  product_type.segmentation_info)
         if product_type is not None:
             self.data_storager.edit_product_type(
                 self.current_product_type_id, product_type)
@@ -257,7 +257,7 @@ class MainWindow(QMainWindow):
         self.current_product_type_id = self.ui.product_type_combo_box.itemData(index)
 
     def edit_product_push_button_clicked(self):
-        self.edit_selected_product()
+        self.edit_product_type()
 
     def start_vision_push_button_clicked(self):
         self.start_vision_system()

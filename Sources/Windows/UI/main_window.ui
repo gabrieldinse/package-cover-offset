@@ -71,10 +71,10 @@ border-style:solid;</string>
      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
-      <x>30</x>
+      <x>19</x>
       <y>10</y>
       <width>761</width>
       <height>301</height>
@@ -375,9 +375,12 @@ border-style:solid;</string>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Fixed</enum>
+         </property>
          <property name="sizeHint" stdset="0">
           <size>
-           <width>40</width>
+           <width>2</width>
            <height>20</height>
           </size>
          </property>
@@ -503,7 +506,7 @@ border-style:solid;</string>
                 <bool>false</bool>
                </property>
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
@@ -1456,7 +1459,7 @@ border-style:solid;</string>
                 <string notr="true">color: rgb(50, 50, 50);</string>
                </property>
                <property name="text">
-                <string>Quantidade:</string>
+                <string>Quantidade: </string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -1565,7 +1568,7 @@ border-style:solid;</string>
                 <string notr="true">color: rgb(50, 50, 50);</string>
                </property>
                <property name="text">
-                <string>Sem tampa:</string>
+                <string>Sem tampa: </string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
