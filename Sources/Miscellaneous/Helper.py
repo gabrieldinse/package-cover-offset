@@ -5,11 +5,11 @@
 
 # Standard Library
 import datetime
-from queue import Queue
 from dataclasses import dataclass
 
 # Third party modules
 import numpy as np
+
 
 # Local application imports
 

@@ -1,6 +1,10 @@
+# Standard Library
 import time
+
+# Third party modules
 import minimalmodbus
-import time
+
+# Local application imports
 
 
 class ModbusConnector(minimalmodbus.Instrument):

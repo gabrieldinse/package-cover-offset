@@ -5,7 +5,6 @@
 
 # Standard Library
 import os
-import socket
 
 # Third party modules
 from pyftpdlib.authorizers import DummyAuthorizer

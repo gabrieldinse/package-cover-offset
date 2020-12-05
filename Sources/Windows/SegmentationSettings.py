@@ -5,14 +5,15 @@
 
 # Standard Library
 
+
 # Third party modules
-from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
-                             QDialog)
+import cv2
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QImage, QPixmap
-import cv2
-from skimage.morphology import convex_hull_image
+from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
+                             QDialog)
 from skimage import img_as_ubyte
+from skimage.morphology import convex_hull_image
 
 # Local application imports
 from Miscellaneous.Helper import SegmentationInfo

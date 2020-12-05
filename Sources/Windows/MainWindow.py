@@ -4,31 +4,25 @@
 # Made with PyCharm
 
 # Standard Library
-import threading
 from typing import Sequence
 
 # Third party modules
+import cv2
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QImage, QPixmap, QColor
 from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
                              QMainWindow, QApplication, QInputDialog, QLineEdit)
-from PyQt5.QtCore import Qt, QTimer, QCoreApplication
-from PyQt5.QtGui import QImage, QPixmap, QColor
-import cv2
 
 # Local application imports
 from Windows.SegmentationSettings import SegmentationSettings
 from Windows.TemplatePicking import TemplatePicking
 from Windows.UI.MainWindowUi import Ui_MainWindow
-
 from Data.DataStorager import DataStorager
-
-from Vision.SyncedVideoStream import SyncedVideoStream
-from Vision.VideoInfoExtractor import VideoInfoExtractor
-
-from Modbus.ModbusConnector import ModbusConnector
-
 from Miscellaneous.Helper import (ProductType, ProductTypeName, Product,
                                   Production, SegmentationInfo)
-from Miscellaneous.Errors import FrameReadingError, TemplateReadingError
+from Modbus.ModbusConnector import ModbusConnector
+from Vision.SyncedVideoStream import SyncedVideoStream
+from Vision.VideoInfoExtractor import VideoInfoExtractor
 
 
 class MainWindow(QMainWindow):
@@ -90,6 +84,7 @@ class MainWindow(QMainWindow):
         self.show_frame_timer.stop()
         self.camera.close()
         self.data_storager.close_database()
+        self.data_storager.logout_from_ftp_server()
 
     def start_vision_system(self):
         product_type = self.data_storager.get_product_type(

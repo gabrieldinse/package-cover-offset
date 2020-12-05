@@ -3,23 +3,23 @@
 # Date: 11/1/2020
 # Made with PyCharm
 
+
 # Standard Library
-from threading import Thread
 import time
+from threading import Thread
 
 # Third party modules
-from skimage.morphology import convex_hull_image
+import cv2
 import imutils
 import numpy as np
-import cv2
-
 from skimage import img_as_ubyte
+from skimage.morphology import convex_hull_image
 
 # Local application imports
-from Vision.SyncedVideoStream import FramesReader
-from Miscellaneous.Helper import (ProductType, SegmentationInfo, Product,
-                                  datetime_now_str)
 from Miscellaneous.Events import VideoInfoEvents
+from Miscellaneous.Helper import (ProductType, Product,
+                                  datetime_now_str)
+from Vision.SyncedVideoStream import FramesReader
 
 
 class VideoInfoExtractor:

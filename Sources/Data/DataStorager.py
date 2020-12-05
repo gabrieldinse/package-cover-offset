@@ -3,25 +3,27 @@
 # Date: 20/03/2020
 # Made with PyCharm
 
+
 # Standard Library
-from ftplib import FTP
 import datetime
-import os
 import io
+import os
+
+
 
 # Third party modules
+from ftplib import FTP
 import mysql.connector as mariadb
-import cv2
 import numpy as np
+import cv2
+
 
 # Local application imports
-from Miscellaneous.Helper import (Product, SegmentationInfo, ProductType,
-                                  ProductTypeName)
-from Miscellaneous.Errors import (TemplateReadingError, TemplateWritingError,
-                                  DatabaseNotOpenedError,
+from Miscellaneous.Errors import (DatabaseNotOpenedError,
                                   NotLoggedInToFTPServerError,
                                   ProductionNotStartedError)
-
+from Miscellaneous.Helper import (Product, SegmentationInfo, ProductType,
+                                  ProductTypeName)
 
 
 class TemplateFromBytes:

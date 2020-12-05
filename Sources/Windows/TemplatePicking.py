@@ -5,12 +5,13 @@
 
 # Standard Library
 
+
 # Third party modules
+import cv2
+from PyQt5.QtCore import QTimer, Qt, pyqtSignal
+from PyQt5.QtGui import QImage, QPixmap, QPen
 from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
                              QDialog, QGraphicsLineItem, QMessageBox)
-from PyQt5.QtGui import QImage, QPixmap, QPen
-from PyQt5.QtCore import QTimer, Qt, pyqtSignal
-import cv2
 
 # Local application imports
 from Windows.UI.TemplatePickingUi import Ui_Dialog
