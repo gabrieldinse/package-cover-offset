@@ -27,12 +27,12 @@ class ModbusConnector(minimalmodbus.Instrument):
 
     def send_offset(self, offset):
         if self.usb_on:
-            offset_sent = offset if offset >= 0 else offset + 65535
-            self.write_register(0, offset_sent)
+            self.write_register(0, offset if offset >= 0 else offset + 65535)
             if self.debug:
                 print(f'Offset {offset}mm enviado com sucesso')
 
     def read_offset(self):
         if self.usb_on:
             test_reg = self.read_registers(0, 1, 4)
-            print(f'Recebido offset {test_reg}')
+            if self.debug:
+                print(f'Recebido offset {test_reg}')

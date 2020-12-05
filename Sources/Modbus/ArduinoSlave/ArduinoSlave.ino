@@ -18,9 +18,9 @@ void loop() {
   if (rec >= 4)
   {
       offset = (offset_data > 1000) ? (int)offset_data - 65535 : offset_data;
-      digitalWrite(LED_BUILTIN, HIGH);   
-      delay(500);                      
-      digitalWrite(LED_BUILTIN, LOW);    
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(500);
+      digitalWrite(LED_BUILTIN, LOW);
       delay(500);
   }
   
