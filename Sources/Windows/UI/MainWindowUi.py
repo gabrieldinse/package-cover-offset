@@ -672,8 +672,8 @@ class Ui_MainWindow(object):
         self.label_28.setText(_translate("MainWindow", "Média (mm):"))
         self.average_offset_label.setText(_translate("MainWindow", "-"))
         self.label_15.setText(_translate("MainWindow", "Produtos registrados"))
-        self.label_30.setText(_translate("MainWindow", "Quantidade:"))
-        self.label_32.setText(_translate("MainWindow", "Sem tampa:"))
+        self.label_30.setText(_translate("MainWindow", "Quantidade: "))
+        self.label_32.setText(_translate("MainWindow", "Sem tampa: "))
 
 
 if __name__ == "__main__":

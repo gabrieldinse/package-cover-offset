@@ -24,7 +24,7 @@ from Data.DataStorager import DataStorager
 from Vision.SyncedVideoStream import SyncedVideoStream
 from Vision.VideoInfoExtractor import VideoInfoExtractor
 
-from ModBus.ModbusConnector import ModbusConnector
+from Modbus.ModbusConnector import ModbusConnector
 
 from Miscellaneous.Helper import (ProductType, ProductTypeName, Product,
                                   Production, SegmentationInfo)
@@ -83,7 +83,7 @@ class MainWindow(QMainWindow):
         self.show_frame_timer = QTimer()
         self.show_frame_timer.timeout.connect(
             self.show_frame)
-        self.show_frame_timeout = 65
+        self.show_frame_timeout = 70
 
     def stop(self):
         self.vision_system.stop()
