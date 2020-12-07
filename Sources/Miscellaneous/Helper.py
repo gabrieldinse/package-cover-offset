@@ -31,7 +31,7 @@ class SegmentationInfo:
 class ProductType:
     name : str
     segmentation_info : SegmentationInfo
-    template : np.ndarray
+    template : np.ndarray=empty_image()
 
 
 @dataclass
@@ -79,3 +79,9 @@ def circular_kernel(size):
             if np.hypot(i - center, j - center) > center:
                 kernel[i, j] = 0
     return kernel
+
+def empty_image():
+    return np.array([])
+
+def is_empty(image: np.ndarray):
+    return image.size == 0

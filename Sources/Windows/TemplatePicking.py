@@ -114,7 +114,7 @@ class TemplatePicking(QDialog):
         self.frames_reader = frames_reader
 
         self.setWindowTitle(self.window_name)
-        self.closed_for_next_step = False
+        self.manually_closed = True
 
         self.scene = TemplateConfigurationScene(self.frames_reader.resolution[0])
         self.ui.graphics_view.setScene(self.scene)
@@ -187,5 +187,5 @@ class TemplatePicking(QDialog):
         except FrameReadingError:
             raise
         else:
-            self.closed_for_next_step = True
+            self.manually_closed = False
             self.close()

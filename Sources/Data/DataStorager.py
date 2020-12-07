@@ -23,7 +23,7 @@ from Miscellaneous.Errors import (DatabaseNotOpenedError,
                                   NotLoggedInToFTPServerError,
                                   ProductionNotStartedError)
 from Miscellaneous.Helper import (Product, SegmentationInfo, ProductType,
-                                  ProductTypeName)
+                                  ProductTypeName, is_empty)
 
 
 class TemplateFromBytes:
@@ -120,7 +120,8 @@ class DataStorager:
 
         return product_type_id
 
-    def edit_product_type(self, product_type_id, product_type: ProductType):
+    def edit_product_type(self, product_type_id, product_type: ProductType,
+                          edit_template=True):
         if not self.database_opened:
             raise DatabaseNotOpenedError("Should open database first.")
 
@@ -128,6 +129,7 @@ class DataStorager:
         self.cursor.execute(f'''
             UPDATE tipo_produto
             SET
+                NomeProduto = "{product_type.name}",
                 LowerCanny = {segmentation_info.lower_canny},
                 UpperCanny = {segmentation_info.upper_canny},
                 FiltroGaussiano = {segmentation_info.gaussian_filter_size}
@@ -136,10 +138,11 @@ class DataStorager:
         ''')
         self.connection.commit()
 
-        success, buffer_array = cv2.imencode(".png", product_type.template)
-        template_bytes = buffer_array.tobytes()
-        self.ftp_client.storbinary(
-            "STOR " + f"{product_type_id}.png", io.BytesIO(template_bytes))
+        if edit_template:
+            success, buffer_array = cv2.imencode(".png", product_type.template)
+            template_bytes = buffer_array.tobytes()
+            self.ftp_client.storbinary(
+                "STOR " + f"{product_type_id}.png", io.BytesIO(template_bytes))
 
     def get_product_types_names(self):
         if not self.database_opened:

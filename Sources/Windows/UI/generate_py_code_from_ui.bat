@@ -1,5 +1,6 @@
 @echo off
-call python -m PyQt5.uic.pyuic -x %~dp0\main_window.ui -o %~dp0\MainWindowUi.py
-call python -m PyQt5.uic.pyuic -x %~dp0\segmentation_settings_dialog.ui -o %~dp0\SegmentationSettingsUi.py
-call python -m PyQt5.uic.pyuic -x %~dp0\template_dialog.ui -o %~dp0\TemplatePickingUi.py
+call python -m PyQt5.uic.pyuic -x main_window.ui -o MainWindowUi.py
+call python -m PyQt5.uic.pyuic -x segmentation_settings_dialog.ui -o SegmentationSettingsUi.py
+call python -m PyQt5.uic.pyuic -x edit_segmentation_settings_dialog.ui -o EditSegmentationSettingsUi.py
+call python -m PyQt5.uic.pyuic -x template_dialog.ui -o TemplatePickingUi.py
 echo Generation done!

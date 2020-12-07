@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
 
 # Local application imports
 from Windows.SegmentationSettings import SegmentationSettings
+from Windows.EditSegmentationSettings import EditSegmentationSettings
 from Windows.TemplatePicking import TemplatePicking
 from Windows.UI.MainWindowUi import Ui_MainWindow
 from Data.DataStorager import DataStorager
@@ -71,8 +72,7 @@ class MainWindow(QMainWindow):
         self.scene.addItem(self.pixmap)
 
         # Configurações iniciais
-        self.set_product_types_list(
-            self.data_storager.get_product_types_names())
+        self.update_product_types_list()
 
         self.show_frame_timer = QTimer()
         self.show_frame_timer.timeout.connect(
@@ -155,61 +155,93 @@ class MainWindow(QMainWindow):
         self.production.add(product)
         self.update_offset_info_ui(product)
 
-    def register_product(self):
+    def add_product_type(self):
         product_name, ok_clicked = QInputDialog().getText(
             self, "Nome do produto", "Nome do produto",
             QLineEdit.Normal, "")
+
         if ok_clicked and product_name:
             product_type = self.setup_vision_settings(product_name)
+
             if product_type is not None:
                 product_type_id = self.data_storager.add_product_type(
                     product_type)
-                self.set_product_types_list(
-                    self.data_storager.get_product_types_names())
-                self.set_product_type(product_type_id)
+                self.update_product_types_list()
+                self.select_product_type(product_type_id)
 
     def edit_product_type(self):
         product_type = self.data_storager.get_product_type(
             self.current_product_type_id)
-        product_type = self.setup_vision_settings(product_type.name,
-                                                  product_type.segmentation_info)
-        if product_type is not None:
-            self.data_storager.edit_product_type(
-                self.current_product_type_id, product_type)
+        product_type_id = self.current_product_type_id
+        product_name, ok_clicked = QInputDialog().getText(
+            self, "Nome do produto", "Nome do produto",
+            QLineEdit.Normal, product_type.name)
 
-    def setup_vision_settings(self, product_name,
-                              segmentation_info: SegmentationInfo=None):
+        if ok_clicked and product_name:
+            new_product_type = self.edit_vision_settings(
+                product_name, product_type.segmentation_info)
+
+            if new_product_type is not None:
+                self.data_storager.edit_product_type(
+                    self.current_product_type_id, new_product_type,
+                    edit_template=False)
+                self.update_product_types_list()
+                self.select_product_type(product_type_id)
+
+    def setup_vision_settings(self, product_name):
         segmentation_dialog = SegmentationSettings(
-            product_name, self.camera.create_frames_reader(),
-            segmentation_info)
+            product_name, self.camera.create_frames_reader())
         segmentation_dialog.exec()
 
-        if segmentation_dialog.closed_for_next_step:
+        if not segmentation_dialog.manually_closed:
             segmentation_info = segmentation_dialog.get_segmentation_info()
-
             template_dialog = TemplatePicking(
                 product_name, self.camera.create_frames_reader())
             template_dialog.exec()
 
-            if template_dialog.closed_for_next_step:
+            if not template_dialog.manually_closed:
+                template = template_dialog.get_template()
+
+                return ProductType(product_name, segmentation_info, template)
+
+        return None
+
+    def edit_vision_settings(self, product_name,
+                             segmentation_info: SegmentationInfo):
+        segmentation_dialog = EditSegmentationSettings(
+            product_name, self.camera.create_frames_reader(), segmentation_info)
+        segmentation_dialog.exec()
+
+        if not segmentation_dialog.manually_closed:
+            new_segmentation_info = segmentation_dialog.get_segmentation_info()
+            template_dialog = TemplatePicking(
+                product_name, self.camera.create_frames_reader())
+            template_dialog.exec()
+
+            if not template_dialog.manually_closed:
                 template = template_dialog.get_template()
 
                 return ProductType(
-                    product_name, segmentation_info, template)
+                    product_name, new_segmentation_info, template)
+
+        elif segmentation_dialog.finished_editing:
+            new_segmentation_info = segmentation_dialog.get_segmentation_info()
+
+            return ProductType(product_name, new_segmentation_info)
+
         return None
 
-    def set_product_types_list(
-            self, product_type_names: Sequence[ProductTypeName]):
+    def update_product_types_list(self):
         self.ui.product_type_combo_box.setDisabled(True)
         self.ui.product_type_combo_box.clear()
-        for product_type in product_type_names:
+        for product_type in self.data_storager.get_product_types_names():
             self.ui.product_type_combo_box.addItem(
                 f"[{product_type.id:05d}] {product_type.name}", product_type.id)
         if self.ui.product_type_combo_box.count():
             self.ui.product_type_combo_box.setEnabled(True)
             self.ui.start_vision_push_button.setEnabled(True)
 
-    def set_product_type(self, product_type_id):
+    def select_product_type(self, product_type_id):
         for i in range(self.ui.product_type_combo_box.count()):
             if self.ui.product_type_combo_box.itemData(i) == product_type_id:
                 self.ui.product_type_combo_box.setCurrentIndex(i)
@@ -246,7 +278,7 @@ class MainWindow(QMainWindow):
 
     # Slots
     def register_product_push_button_clicked(self):
-        self.register_product()
+        self.add_product_type()
 
     def product_type_combo_box_index_changed(self, index):
         self.current_product_type_id = self.ui.product_type_combo_box.itemData(index)
@@ -269,8 +301,6 @@ class MainWindow(QMainWindow):
 
 def main():
     import sys
-    import subprocess
-    subprocess.call([r'.\UI\generate_py_code_from_ui.bat'])
 
     sys._excepthook = sys.excepthook
 

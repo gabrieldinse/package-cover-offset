@@ -21,8 +21,7 @@ from Windows.UI.SegmentationSettingsUi import Ui_Dialog
 
 
 class SegmentationSettings(QDialog):
-    def __init__(self, window_name, frames_reader,
-                 segmentation_info, parent=None):
+    def __init__(self, window_name, frames_reader, parent=None):
         super().__init__(parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -59,27 +58,17 @@ class SegmentationSettings(QDialog):
         self.ui.next_push_button.clicked.connect(
             self.next_push_button_clicked)
 
-        self.initialize_ui_values(segmentation_info)
+        self.lower_canny = 0
+        self.upper_canny = 255
+        self.gaussian_kernel_size = 5
+        self.ui.lower_canny_slider.setValue(self.lower_canny)
+        self.ui.upper_canny_slider.setValue(self.upper_canny)
+        self.ui.gaussian_kernel_spin_box.setValue(self.gaussian_kernel_size)
 
         self.show_frame_timer = QTimer()
         self.show_frame_timer.timeout.connect(
             self.segment_and_show_frame)
         self.show_frame_timer.start(50)
-
-    def initialize_ui_values(self, segmentation_info: SegmentationInfo):
-        if segmentation_info is None:
-            self.lower_canny = 0
-            self.upper_canny = 255
-            self.gaussian_kernel_size = 5
-        else:
-            self.lower_canny = segmentation_info.lower_canny
-            self.upper_canny = segmentation_info.upper_canny
-            self.gaussian_kernel_size = segmentation_info.gaussian_filter_size
-            self.ui.manual_radio_button.setChecked(True)
-
-        self.ui.lower_canny_slider.setValue(self.lower_canny)
-        self.ui.upper_canny_slider.setValue(self.upper_canny)
-        self.ui.gaussian_kernel_spin_box.setValue(self.gaussian_kernel_size)
 
     def segment_and_show_frame(self):
         # frame = cv2.imread("../Vision/Resources/frame.jpg", 1)
