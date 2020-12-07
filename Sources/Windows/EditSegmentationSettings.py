@@ -75,8 +75,8 @@ class EditSegmentationSettings(QDialog):
         self.show_frame_timer.start(50)
 
     def segment_and_show_frame(self):
-        # frame = cv2.imread("../Vision/Resources/frame.jpg", 1)
-        frame = self.frames_reader.read()
+        frame = cv2.imread("../Vision/Resources/frame.jpg", 1)
+        # frame = self.frames_reader.read()
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, _ = frame.shape
