@@ -13,6 +13,15 @@ import numpy as np
 
 # Local application imports
 
+
+def empty_image():
+    return np.array([])
+
+
+def is_empty(image: np.ndarray):
+    return image.size == 0
+
+
 @dataclass
 class Product:
     datetime_produced : str
@@ -79,9 +88,3 @@ def circular_kernel(size):
             if np.hypot(i - center, j - center) > center:
                 kernel[i, j] = 0
     return kernel
-
-def empty_image():
-    return np.array([])
-
-def is_empty(image: np.ndarray):
-    return image.size == 0

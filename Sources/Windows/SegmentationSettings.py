@@ -30,7 +30,7 @@ class SegmentationSettings(QDialog):
         self.frames_reader = frames_reader
 
         self.setWindowTitle(self.window_name)
-        self.closed_for_next_step = False
+        self.manually_closed = True
 
         # Configurações dos QGraphicsView
         self.scene = QGraphicsScene()
@@ -147,5 +147,5 @@ class SegmentationSettings(QDialog):
 
     def next_push_button_clicked(self):
         self.show_frame_timer.stop()
-        self.closed_for_next_step = True
+        self.manually_closed = False
         self.close()
