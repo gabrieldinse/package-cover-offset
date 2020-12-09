@@ -8,8 +8,6 @@ import minimalmodbus
 
 
 class ModbusConnector(minimalmodbus.Instrument):
-
-
     def __init__(self, port='COM3', slaveaddress=1,
                  close_port_after_each_call=False, debug=False):
         minimalmodbus.Instrument.__init__(self, port, slaveaddress)

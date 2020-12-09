@@ -28,11 +28,11 @@ class VideoInfoExtractor:
 
         self.frames_reader = frames_reader
         self.min_package_area = 50000
-        self.max_package_area = 62000
+        self.max_package_area = 68000
         self.max_template_matching = 0.10
         self.scale_factor = 0.573
         self.new_package_delay = 1.0
-        self.min_package_centroid_pos = int(self.frames_reader.width * 0.30)
+        self.min_package_centroid_pos = int(self.frames_reader.width * 0.35)
         self.max_package_centroid_pos = int(self.frames_reader.width * 0.65)
         self.template_matching_method = cv2.TM_SQDIFF_NORMED
 

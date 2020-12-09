@@ -40,7 +40,7 @@ class MainWindow(QMainWindow):
         self.data_storager.login_to_ftp_server()
         self.vision_system = VideoInfoExtractor(
             self.camera.create_frames_reader())
-        self.modbus_connector = ModbusConnector()
+        self.modbus_connector = ModbusConnector(debug=True)
 
         # Sistema auxiliar
         self.production = Production()
@@ -112,6 +112,7 @@ class MainWindow(QMainWindow):
             'color: rgb(255, 0, 0);')
         self.vision_system.stop()
         self.data_storager.stop_production()
+        self.production.reset()
 
     def turn_on_camera(self):
         self.camera.open()
