@@ -9,14 +9,11 @@ import datetime
 import io
 import os
 
-
-
 # Third party modules
 from ftplib import FTP
 import mysql.connector as mariadb
 import numpy as np
 import cv2
-
 
 # Local application imports
 from Miscellaneous.Errors import (DatabaseNotOpenedError,
@@ -30,19 +27,19 @@ class TemplateFromBytes:
     def __init__(self):
         self.data = b""
 
-    def __call__(self, data):
+    def __call__(self, data : bytes) -> None:
         self.data += data
 
 
 class DataStorager:
-    def __init__(self, ):
+    def __init__(self):
         self.started = False
         self.database_opened = False
         self.template_path = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "Templates")
         self.logged_in_to_ftp = False
 
-    def open_database(self):
+    def open_database(self) -> None:
         if not self.database_opened:
             self.connection = mariadb.connect(
                 host='localhost',
@@ -53,21 +50,22 @@ class DataStorager:
             self.cursor = self.connection.cursor()
             self.database_opened = True
 
-    def login_to_ftp_server(self):
+    def login_to_ftp_server(self) -> None:
         self.ftp_client = FTP("127.0.0.1")
         self.ftp_client.login(user="admin", passwd="admin")
         self.ftp_client.cwd("/")
         self.logged_in_to_ftp = True
 
-    def close_database(self):
+    def close_database(self) -> None:
         if self.database_opened:
             self.cursor.close()
             self.connection.close()
 
-    def logout_from_ftp_server(self):
+    def logout_from_ftp_server(self) -> None:
         self.ftp_client.close()
 
-    def start_production(self, product_type_id, production_id=None):
+    def start_production(self, product_type_id : int,
+                         production_id : int=None) -> None:
         if not self.database_opened:
             raise DatabaseNotOpenedError("Should open database first.")
 
@@ -90,10 +88,10 @@ class DataStorager:
         self.connection.commit()
         self.production_started = True
 
-    def stop_production(self):
+    def stop_production(self) -> None:
         self.started = False
 
-    def add_product_type(self, product_type : ProductType):
+    def add_product_type(self, product_type : ProductType) -> int:
         if not self.database_opened:
             raise DatabaseNotOpenedError("Should open database first.")
 
@@ -120,8 +118,9 @@ class DataStorager:
 
         return product_type_id
 
-    def edit_product_type(self, product_type_id, product_type: ProductType,
-                          edit_template=True):
+    def edit_product_type(self, product_type_id : int,
+                          product_type: ProductType,
+                          edit_template=True) -> None:
         if not self.database_opened:
             raise DatabaseNotOpenedError("Should open database first.")
 
@@ -144,7 +143,7 @@ class DataStorager:
             self.ftp_client.storbinary(
                 "STOR " + f"{product_type_id}.png", io.BytesIO(template_bytes))
 
-    def get_product_types_names(self):
+    def get_product_types_names(self) -> list[tuple]:
         if not self.database_opened:
             raise DatabaseNotOpenedError("Should open database first.")
 
@@ -157,7 +156,7 @@ class DataStorager:
         return product_types_names
 
 
-    def get_product_type(self, product_type_id):
+    def get_product_type(self, product_type_id : int) -> ProductType:
         if not self.database_opened:
             raise DatabaseNotOpenedError("Should open database first.")
 
@@ -182,7 +181,7 @@ class DataStorager:
             row[0], SegmentationInfo(*row[1:]), template)
         return product_type
 
-    def add_product(self, product : Product):
+    def add_product(self, product : Product) -> int:
         if not self.database_opened:
             raise DatabaseNotOpenedError("Should open database first.")
 

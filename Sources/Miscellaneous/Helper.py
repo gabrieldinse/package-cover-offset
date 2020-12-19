@@ -18,7 +18,7 @@ def empty_image():
     return np.array([])
 
 
-def is_empty(image: np.ndarray):
+def is_empty(image : np.ndarray):
     return image.size == 0
 
 
