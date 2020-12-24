@@ -20,7 +20,7 @@ from Windows.TemplatePicking import TemplatePicking
 from Windows.UI.MainWindowUi import Ui_MainWindow
 from Data.DataStorager import DataStorager
 from Miscellaneous.Helper import (ProductType, ProductTypeName, Product,
-                                  Production, SegmentationInfo)
+                                  Production, SegmentationInfo, full_filepath)
 from Modbus.ModbusConnector import ModbusConnector
 from Vision.SyncedVideoStream import SyncedVideoStream
 from Vision.VideoInfoExtractor import VideoInfoExtractor
@@ -34,13 +34,14 @@ class MainWindow(QMainWindow):
 
         # Systemas principais da aplicação
         self.camera = SyncedVideoStream.from_file(
-            "../Vision/Resources/video_loop.mp4", resolution=(640, 360))
+            full_filepath("../Vision/Resources/video_loop.mp4"),
+            resolution=(640, 360))
         self.data_storager = DataStorager()
         self.data_storager.open_database()
         self.data_storager.login_to_ftp_server()
         self.vision_system = VideoInfoExtractor(
             self.camera.create_frames_reader())
-        self.modbus_connector = ModbusConnector(debug=True)
+        # self.modbus_connector = ModbusConnector(debug=True)
 
         # Sistema auxiliar
         self.production = Production()
@@ -79,14 +80,14 @@ class MainWindow(QMainWindow):
             self.show_frame)
         self.show_frame_timeout = 70
 
-    def stop(self):
+    def stop(self) -> None:
         self.vision_system.stop()
         self.show_frame_timer.stop()
         self.camera.close()
         self.data_storager.close_database()
         self.data_storager.logout_from_ftp_server()
 
-    def start_vision_system(self):
+    def start_vision_system(self) -> None:
         product_type = self.data_storager.get_product_type(
             self.current_product_type_id)
         self.data_storager.start_production(self.current_product_type_id)
@@ -101,7 +102,7 @@ class MainWindow(QMainWindow):
             'border-style: solid;'
             'color: rgb(0, 255, 0);')
 
-    def stop_vision_system(self):
+    def stop_vision_system(self) -> None:
         self.ui.start_vision_push_button.setEnabled(True)
         self.ui.stop_vision_push_button.setDisabled(True)
         self.ui.vision_state_label.setText('OFF')
@@ -114,7 +115,7 @@ class MainWindow(QMainWindow):
         self.data_storager.stop_production()
         self.production.reset()
 
-    def turn_on_camera(self):
+    def turn_on_camera(self) -> None:
         self.camera.open()
         self.ui.turn_on_camera_push_button.setDisabled(True)
         self.ui.turn_off_camera_push_button.setEnabled(True)
@@ -128,7 +129,7 @@ class MainWindow(QMainWindow):
             'border-style: solid;'
             'color: rgb(0, 255, 0);')
 
-    def turn_off_camera(self):
+    def turn_off_camera(self) -> None:
         self.stop_vision_system()
         self.ui.turn_off_camera_push_button.setDisabled(True)
         self.ui.turn_on_camera_push_button.setEnabled(True)
@@ -150,13 +151,13 @@ class MainWindow(QMainWindow):
             'color: rgb(255, 0, 0);')
         self.camera.close()
 
-    def add_product(self, product: Product):
-        self.modbus_connector.send_offset(product.offset)
+    def add_product(self, product: Product) -> None:
+        # self.modbus_connector.send_offset(product.offset)
         self.data_storager.add_product(product)
         self.production.add(product)
         self.update_offset_info_ui(product)
 
-    def add_product_type(self):
+    def add_product_type(self) -> None:
         product_name, ok_clicked = QInputDialog().getText(
             self, "Nome do produto", "Nome do produto",
             QLineEdit.Normal, "")
@@ -170,7 +171,7 @@ class MainWindow(QMainWindow):
                 self.update_product_types_list()
                 self.select_product_type(product_type_id)
 
-    def edit_product_type(self):
+    def edit_product_type(self) -> None:
         product_type = self.data_storager.get_product_type(
             self.current_product_type_id)
         product_type_id = self.current_product_type_id
@@ -189,7 +190,7 @@ class MainWindow(QMainWindow):
                 self.update_product_types_list()
                 self.select_product_type(product_type_id)
 
-    def setup_vision_settings(self, product_name):
+    def setup_vision_settings(self, product_name: str) -> None:
         segmentation_dialog = SegmentationSettings(
             product_name, self.camera.create_frames_reader())
         segmentation_dialog.exec()
@@ -208,7 +209,7 @@ class MainWindow(QMainWindow):
         return None
 
     def edit_vision_settings(self, product_name,
-                             segmentation_info: SegmentationInfo):
+                             segmentation_info: SegmentationInfo) -> None:
         segmentation_dialog = EditSegmentationSettings(
             product_name, self.camera.create_frames_reader(), segmentation_info)
         segmentation_dialog.exec()
@@ -232,7 +233,7 @@ class MainWindow(QMainWindow):
 
         return None
 
-    def update_product_types_list(self):
+    def update_product_types_list(self) -> None:
         self.ui.product_type_combo_box.setDisabled(True)
         self.ui.product_type_combo_box.clear()
         for product_type in self.data_storager.get_product_types_names():
@@ -242,12 +243,12 @@ class MainWindow(QMainWindow):
             self.ui.product_type_combo_box.setEnabled(True)
             self.ui.start_vision_push_button.setEnabled(True)
 
-    def select_product_type(self, product_type_id):
+    def select_product_type(self, product_type_id: int) -> None:
         for i in range(self.ui.product_type_combo_box.count()):
             if self.ui.product_type_combo_box.itemData(i) == product_type_id:
                 self.ui.product_type_combo_box.setCurrentIndex(i)
 
-    def show_frame(self):
+    def show_frame(self) -> None:
         frame = self.frames_reader.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, _ = frame.shape
@@ -258,7 +259,7 @@ class MainWindow(QMainWindow):
         gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
         self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
 
-    def update_offset_info_ui(self, product: Product):
+    def update_offset_info_ui(self, product: Product) -> None:
         if product.has_cover:
             self.ui.last_offset_label.setText(f'{product.offset:.1f}mm')
         else:
@@ -272,7 +273,7 @@ class MainWindow(QMainWindow):
             str(self.production.quantity))
         self.ui.no_cover_products_label.setText(
             str(self.production.no_cover_quantity))
-
+    
     def closeEvent(self, event):
         self.stop()
         event.accept()

@@ -67,12 +67,11 @@ class SegmentationSettings(QDialog):
 
         self.show_frame_timer = QTimer()
         self.show_frame_timer.timeout.connect(
-            self.segment_and_show_frame)
+            self._segment_and_show_frame)
         self.show_frame_timer.start(50)
 
-    def segment_and_show_frame(self):
-        frame = cv2.imread("../Vision/Resources/frame.jpg", 1)
-        # frame = self.frames_reader.read()
+    def _segment_and_show_frame(self) -> None:
+        frame = self.frames_reader.read()
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, _ = frame.shape
@@ -84,7 +83,7 @@ class SegmentationSettings(QDialog):
             gray_frame,
             (self.gaussian_kernel_size, self.gaussian_kernel_size), 0)
 
-        self.calculate_canny_threshold(blurred_gray_frame)
+        self._calculate_canny_threshold(blurred_gray_frame)
         canny_edges = cv2.Canny(
             blurred_gray_frame, self.lower_canny, self.upper_canny)
         convex_hull = img_as_ubyte(convex_hull_image(canny_edges))
@@ -109,7 +108,7 @@ class SegmentationSettings(QDialog):
         self.segmentation_pixmap.setPixmap(
             QPixmap.fromImage(segmented_gui_frame))
 
-    def calculate_canny_threshold(self, gray_frame):
+    def _calculate_canny_threshold(self, gray_frame) -> None:
         if self.ui.otsu_radio_button.isChecked():
             self.upper_canny, thresh_image = cv2.threshold(
                 gray_frame, 0, 255,
@@ -119,33 +118,33 @@ class SegmentationSettings(QDialog):
             self.lower_canny = self.ui.lower_canny_slider.value()
             self.upper_canny = self.ui.upper_canny_slider.value()
 
-    def get_segmentation_info(self):
+    def get_segmentation_info(self) -> None:
         return SegmentationInfo(self.lower_canny, self.upper_canny,
                                 self.gaussian_kernel_size)
 
-    def otsu_radio_button_toggled(self):
+    def otsu_radio_button_toggled(self) -> None:
         self.ui.upper_canny_slider.setDisabled(True)
         self.ui.lower_canny_slider.setDisabled(True)
 
-    def manual_radio_button_toggled(self):
+    def manual_radio_button_toggled(self) -> None:
         self.ui.upper_canny_slider.setEnabled(True)
         self.ui.lower_canny_slider.setEnabled(True)
 
-    def lower_canny_slider_value_changed(self):
+    def lower_canny_slider_value_changed(self) -> None:
         self.lower_canny = self.ui.lower_canny_slider.value()
         self.ui.lower_canny_label.setText(str(self.lower_canny))
 
-    def upper_canny_slider_value_changed(self):
+    def upper_canny_slider_value_changed(self) -> None:
         self.upper_canny = self.ui.upper_canny_slider.value()
         self.ui.upper_canny_label.setText(str(self.upper_canny))
 
-    def gaussian_kernel_spin_box_value_changed(self):
+    def gaussian_kernel_spin_box_value_changed(self) -> None:
         if self.ui.gaussian_kernel_spin_box.value() % 2 == 0:
             self.ui.gaussian_kernel_spin_box.setValue(
                 self.ui.gaussian_kernel_spin_box.value() + 1)
         self.gaussian_kernel_size = self.ui.gaussian_kernel_spin_box.value()
 
-    def next_push_button_clicked(self):
+    def next_push_button_clicked(self) -> None:
         self.show_frame_timer.stop()
         self.manually_closed = False
         self.close()

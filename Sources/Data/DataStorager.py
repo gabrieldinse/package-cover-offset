@@ -7,7 +7,7 @@
 # Standard Library
 import datetime
 import io
-import os
+from typing import List, Tuple
 
 # Third party modules
 from ftplib import FTP
@@ -20,14 +20,14 @@ from Miscellaneous.Errors import (DatabaseNotOpenedError,
                                   NotLoggedInToFTPServerError,
                                   ProductionNotStartedError)
 from Miscellaneous.Helper import (Product, SegmentationInfo, ProductType,
-                                  ProductTypeName, is_empty)
+                                  ProductTypeName, is_empty, full_filepath)
 
 
 class TemplateFromBytes:
     def __init__(self):
         self.data = b""
 
-    def __call__(self, data : bytes) -> None:
+    def __call__(self, data: bytes) -> None:
         self.data += data
 
 
@@ -35,8 +35,7 @@ class DataStorager:
     def __init__(self):
         self.started = False
         self.database_opened = False
-        self.template_path = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "Templates")
+        self.template_path = full_filepath("Templates")
         self.logged_in_to_ftp = False
 
     def open_database(self) -> None:
@@ -64,8 +63,8 @@ class DataStorager:
     def logout_from_ftp_server(self) -> None:
         self.ftp_client.close()
 
-    def start_production(self, product_type_id : int,
-                         production_id : int=None) -> None:
+    def start_production(self, product_type_id: int,
+                         production_id: int=None) -> None:
         if not self.database_opened:
             raise DatabaseNotOpenedError("Should open database first.")
 
@@ -91,7 +90,7 @@ class DataStorager:
     def stop_production(self) -> None:
         self.started = False
 
-    def add_product_type(self, product_type : ProductType) -> int:
+    def add_product_type(self, product_type: ProductType) -> int:
         if not self.database_opened:
             raise DatabaseNotOpenedError("Should open database first.")
 
@@ -118,7 +117,7 @@ class DataStorager:
 
         return product_type_id
 
-    def edit_product_type(self, product_type_id : int,
+    def edit_product_type(self, product_type_id: int,
                           product_type: ProductType,
                           edit_template=True) -> None:
         if not self.database_opened:
@@ -143,7 +142,7 @@ class DataStorager:
             self.ftp_client.storbinary(
                 "STOR " + f"{product_type_id}.png", io.BytesIO(template_bytes))
 
-    def get_product_types_names(self) -> list[tuple]:
+    def get_product_types_names(self) -> List[Tuple]:
         if not self.database_opened:
             raise DatabaseNotOpenedError("Should open database first.")
 
@@ -156,7 +155,7 @@ class DataStorager:
         return product_types_names
 
 
-    def get_product_type(self, product_type_id : int) -> ProductType:
+    def get_product_type(self, product_type_id: int) -> ProductType:
         if not self.database_opened:
             raise DatabaseNotOpenedError("Should open database first.")
 
@@ -181,7 +180,7 @@ class DataStorager:
             row[0], SegmentationInfo(*row[1:]), template)
         return product_type
 
-    def add_product(self, product : Product) -> int:
+    def add_product(self, product: Product) -> int:
         if not self.database_opened:
             raise DatabaseNotOpenedError("Should open database first.")
 

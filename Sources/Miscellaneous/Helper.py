@@ -5,6 +5,7 @@
 
 # Standard Library
 import datetime
+import os
 from dataclasses import dataclass
 
 # Third party modules
@@ -18,8 +19,16 @@ def empty_image():
     return np.array([])
 
 
-def is_empty(image : np.ndarray):
+def is_empty(image: np.ndarray):
     return image.size == 0
+
+
+def current_folder():
+    return os.path.dirname(os.path.realpath(__file__))
+
+
+def full_filepath(relative_filepath: str):
+    return os.path.join(current_folder(), relative_filepath)
 
 
 @dataclass

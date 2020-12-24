@@ -21,7 +21,7 @@ class TemplateConfigurationScene(QGraphicsScene):
     first_point_added = pyqtSignal()
     second_point_added = pyqtSignal()
 
-    def __init__(self, camera_width):
+    def __init__(self, camera_width: int):
         super().__init__()
         self.upper_left_selected = False
         self.bottom_right_selected = False
@@ -43,7 +43,7 @@ class TemplateConfigurationScene(QGraphicsScene):
         self.mouse_hori_line.setPen(self.pen)
         self.mouse_vert_line.setPen(self.pen)
 
-    def reset(self):
+    def _reset(self) -> None:
         self.removeItem(self.line_left)
         self.removeItem(self.line_right)
         self.removeItem(self.line_top)
@@ -52,12 +52,12 @@ class TemplateConfigurationScene(QGraphicsScene):
         self.bottom_right_selected = False
         self.first_mouse_move = True
 
-    def is_mouse_on_scene(self, position):
+    def _is_mouse_on_scene(self, position) -> None:
         return (position.x() < self.sceneRect().width() - self.pen.width()) \
                and (position.y() < self.sceneRect().height() - self.pen.width())
 
-    def mouseMoveEvent(self, event):
-        if self.is_mouse_on_scene(event.scenePos()):
+    def mouseMoveEvent(self, event) -> None:
+        if self._is_mouse_on_scene(event.scenePos()):
             self.mouse_hori_line.setLine(
                 0, event.scenePos().y(), self.sceneRect().width() - self.pen.width(),
                 event.scenePos().y())
@@ -69,8 +69,8 @@ class TemplateConfigurationScene(QGraphicsScene):
                 self.addItem(self.mouse_hori_line)
                 self.addItem(self.mouse_vert_line)
 
-    def mousePressEvent(self, event):
-        if self.is_mouse_on_scene(event.scenePos()):
+    def mousePressEvent(self, event) -> None:
+        if self._is_mouse_on_scene(event.scenePos()):
             if not self.upper_left_selected:
                 self.upper_left_selected = True
                 self.upper_left = event.scenePos() * self.scale
@@ -129,30 +129,29 @@ class TemplatePicking(QDialog):
 
         self.show_frame_timer = QTimer()
         self.show_frame_timer.timeout.connect(
-            self.show_frame)
+            self._show_frame)
         self.show_frame_timer.start(50)
 
-    def exec(self):
+    def exec(self) -> None:
         self.show()
-        self.show_first_point_message()
+        self._show_first_point_message()
         super().exec()
 
     @staticmethod
-    def show_first_point_message():
+    def _show_first_point_message() -> None:
         msg_box = QMessageBox()
         msg_box.setText("Selecione o ponto superior esquerdo do template")
         msg_box.exec()
 
     @staticmethod
-    def show_second_point_message():
+    def _show_second_point_message() -> None:
         msg_box = QMessageBox()
         msg_box.setText("Selecione o ponto inferior direito do template")
         msg_box.exec()
 
-    def show_frame(self):
-        frame = cv2.imread("../Vision/Resources/frame.jpg", 1)
-
-        # frame = self.frames_reader.read()
+    def _show_frame(self) -> None:
+        frame = self.frames_reader.read()
+        
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, _ = frame.shape
         bytes_per_line = 3 * width
@@ -163,27 +162,26 @@ class TemplatePicking(QDialog):
         gui_frame = gui_frame.scaled(470, 470, Qt.KeepAspectRatio)
         self.pixmap.setPixmap(QPixmap.fromImage(gui_frame))
 
-    def get_template(self):
+    def get_template(self) -> None:
         return self.frame[
                int(self.scene.upper_left.y()):int(self.scene.bottom_right.y()),
                int(self.scene.upper_left.x()):int(self.scene.bottom_right.x())]
 
-    def first_point_added(self):
-        self.show_second_point_message()
+    def first_point_added(self) -> None:
+        self._show_second_point_message()
 
-    def second_point_added(self):
+    def second_point_added(self) -> None:
         self.ui.finish_push_button.setEnabled(True)
 
-    def reset_push_button_clicked(self):
-        self.scene.reset()
-        self.show_first_point_message()
+    def reset_push_button_clicked(self) -> None:
+        self.scene._reset()
+        self._show_first_point_message()
         self.ui.finish_push_button.setDisabled(True)
 
-    def finish_push_button_clicked(self):
+    def finish_push_button_clicked(self) -> None:
         self.show_frame_timer.stop()
         try:
-            # self.frame = self.frames_reader.read()
-            self.frame = cv2.imread("../Vision/Resources/frame.jpg", 1)
+            self.frame = self.frames_reader.read()
         except FrameReadingError:
             raise
         else:

@@ -38,10 +38,10 @@ class VideoInfoExtractor:
 
         self.running = False
 
-    def bind(self, **kwargs):
+    def bind(self, **kwargs) -> None:
         self.events.bind(**kwargs)
 
-    def start(self, product_type : ProductType):
+    def start(self, product_type: ProductType) -> None:
         if not self.running:
             self.template = product_type.template
             self.gaussian_kernel_size = product_type.segmentation_info.gaussian_filter_size
@@ -52,32 +52,32 @@ class VideoInfoExtractor:
             self.thread = Thread(target=self.run, args=())
             self.thread.start()
 
-    def stop(self):
+    def stop(self) -> None:
         if self.running:
             self.running = False
             self.thread.join()
 
-    def run(self):
+    def run(self) -> None:
         while self.running:
             try:
                 self.frame = self.frames_reader.read()
             except FrameReadingError:
                 pass
             else:
-                if self.capture_time_passed():
-                    self.get_convex_package()  # Convex hull
-                    self.calculate_package_centroid()
-                    if self.is_package_centroid_in_place():
-                        self.calculate_cover_centroid()  # Template matching
-                        self.calculate_offset()
+                if self._capture_time_passed():
+                    self._produce_convex_package()  # Convex hull
+                    self._calculate_package_centroid()
+                    if self._is_package_centroid_in_place():
+                        self._calculate_cover_centroid()  # Template matching
+                        self._calculate_offset()
 
-    def capture_time_passed(self):
+    def _capture_time_passed(self) -> bool:
         return time.time() - self.current_capture_time >= self.new_package_delay
 
-    def reset_capture_timer(self):
+    def _reset_capture_timer(self) -> None:
         self.current_capture_time = time.time()
 
-    def get_convex_package(self):
+    def _produce_convex_package(self) -> None:
         self.gray_frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2GRAY)
         blurred_gray_frame = cv2.GaussianBlur(
             self.gray_frame,
@@ -87,21 +87,21 @@ class VideoInfoExtractor:
             blurred_gray_frame, self.lower_canny, self.upper_canny)
         self.convex_hull = img_as_ubyte(convex_hull_image(canny_edges))
 
-    def calculate_package_centroid(self):
+    def _calculate_package_centroid(self) -> None:
         package_area = (self.convex_hull == 255).sum()
         if self.min_package_area <= package_area <= self.max_package_area:
             _, self.package_centroid = \
                 np.argwhere(self.convex_hull == 255).sum(0) / package_area
-            self.reset_capture_timer()
+            self._reset_capture_timer()
         else:
             self.package_centroid = None
 
-    def is_package_centroid_in_place(self):
+    def _is_package_centroid_in_place(self) -> None:
         return (self.package_centroid is not None
                 and self.min_package_centroid_pos < self.package_centroid <
                 self.max_package_centroid_pos)
 
-    def calculate_cover_centroid(self):
+    def _calculate_cover_centroid(self) -> None:
         best_match = None
         for scale in np.linspace(0.8, 1.2, 9):
             for orientation in ["0", "180"]:
@@ -128,15 +128,15 @@ class VideoInfoExtractor:
         else:
             self.cover_centroid = None
 
-    def has_cover(self):
+    def _has_cover(self) -> bool:
         return self.cover_centroid is not None
 
-    def calculate_offset(self):
-        if self.has_cover():
+    def _calculate_offset(self) -> None:
+        if self._has_cover():
             offset = int(
                 (self.cover_centroid - self.package_centroid)
                 * self.scale_factor)
         else:
             offset = 0
         self.events.emit("new_product",
-                         Product(datetime_now_str(), offset, self.has_cover()))
+                         Product(datetime_now_str(), offset, self._has_cover()))
