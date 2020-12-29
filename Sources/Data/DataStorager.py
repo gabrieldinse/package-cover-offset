@@ -5,13 +5,12 @@
 
 
 # Standard Library
-import datetime
 import io
 from typing import List, Tuple
 
 # Third party modules
 from ftplib import FTP
-import mysql.connector as mariadb
+import psycopg2
 import numpy as np
 import cv2
 
@@ -21,6 +20,9 @@ from Miscellaneous.Errors import (DatabaseNotOpenedError,
                                   ProductionNotStartedError)
 from Miscellaneous.Helper import (Product, SegmentationInfo, ProductType,
                                   ProductTypeName, is_empty, full_filepath)
+
+
+FTP.port = 2121
 
 
 class TemplateFromBytes:
@@ -40,17 +42,18 @@ class DataStorager:
 
     def open_database(self) -> None:
         if not self.database_opened:
-            self.connection = mariadb.connect(
+            self.connection = psycopg2.connect(
                 host='localhost',
-                user='root',
+                user='gabriel',
                 password='123456',
-                database='controle_producao'
+                database='packages',
+                port=5432
             )
             self.cursor = self.connection.cursor()
             self.database_opened = True
 
     def login_to_ftp_server(self) -> None:
-        self.ftp_client = FTP("127.0.0.1")
+        self.ftp_client = FTP("localhost")
         self.ftp_client.login(user="admin", passwd="admin")
         self.ftp_client.cwd("/")
         self.logged_in_to_ftp = True
@@ -69,20 +72,20 @@ class DataStorager:
             raise DatabaseNotOpenedError("Should open database first.")
 
         if production_id is None:
-            start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.cursor.execute(f'''
-                INSERT INTO producao (IniciadaEm) VALUES ("{start_time}")
+                INSERT INTO production (started_in) VALUES (current_timestamp)
+                RETURNING id
             ''')
-            self.production_id = self.cursor.lastrowid
+            self.production_id = self.cursor.fetchone()[0]
         else:
             self.production_id = production_id
 
         self.product_type_id = product_type_id
         self.cursor.execute(f'''
-            INSERT INTO producao_tipo_produto
-                (IdTipoProduto, IdProducao)
+            INSERT INTO production_product_type
+                (product_type_id, production_id)
             VALUES 
-                ({self.product_type_id}, {self.production_id})
+                ({self.product_type_id}, {self.production_id});
         ''')
         self.connection.commit()
         self.production_started = True
@@ -100,15 +103,16 @@ class DataStorager:
 
         segmentation_info = product_type.segmentation_info
         self.cursor.execute(f'''
-            INSERT INTO tipo_produto
-                (NomeProduto, LowerCanny, UpperCanny, FiltroGaussiano)
+            INSERT INTO product_type
+                (name, lower_canny, upper_canny, gaussian_filter)
             VALUES
-                ("{product_type.name}", {segmentation_info.lower_canny},
+                ('{product_type.name}', {segmentation_info.lower_canny},
                   {segmentation_info.upper_canny},
                   {segmentation_info.gaussian_filter_size})
+            RETURNING id
         ''')
         self.connection.commit()
-        product_type_id = self.cursor.lastrowid
+        product_type_id = self.cursor.fetchone()[0]
 
         success, buffer_array = cv2.imencode(".png", product_type.template)
         template_bytes = buffer_array.tobytes()
@@ -125,14 +129,14 @@ class DataStorager:
 
         segmentation_info = product_type.segmentation_info
         self.cursor.execute(f'''
-            UPDATE tipo_produto
+            UPDATE product_type
             SET
-                NomeProduto = "{product_type.name}",
-                LowerCanny = {segmentation_info.lower_canny},
-                UpperCanny = {segmentation_info.upper_canny},
-                FiltroGaussiano = {segmentation_info.gaussian_filter_size}
+                name = "{product_type.name}",
+                lower_canny = {segmentation_info.lower_canny},
+                upper_canny = {segmentation_info.upper_canny},
+                gaussian_filter = {segmentation_info.gaussian_filter_size}
             WHERE
-                Id = {product_type_id}
+                id = {product_type_id}
         ''')
         self.connection.commit()
 
@@ -147,7 +151,7 @@ class DataStorager:
             raise DatabaseNotOpenedError("Should open database first.")
 
         self.cursor.execute(f'''
-            SELECT Id, NomeProduto FROM tipo_produto
+            SELECT id, name FROM product_type
         ''')
         product_types_names = []
         for product_type_name in self.cursor:
@@ -161,10 +165,10 @@ class DataStorager:
 
         self.cursor.execute(f'''
             SELECT
-                NomeProduto, LowerCanny, UpperCanny, FiltroGaussiano
-            FROM tipo_produto
+                name, lower_canny, upper_canny, gaussian_filter
+            FROM product_type
             WHERE
-                Id = {product_type_id}
+                id = {product_type_id}
         ''')
         row = next(self.cursor)
 
@@ -189,18 +193,19 @@ class DataStorager:
                 "Production should be started first")
 
         self.cursor.execute(f'''
-            INSERT INTO produto
-                (Offset, TemTampa, ProduzidoEm)
+            INSERT INTO product
+                (offset, has_cover, produced_in)
             VALUES
                 ({product.offset},
                  {int(product.has_cover)},
-                 "{product.datetime_produced}")
+                 current_timestamp)
+            RETURNING id
         ''')
-        product_id = self.cursor.lastrowid
+        product_id = self.cursor.fetchone()[0]
 
         self.cursor.execute(f'''
-            INSERT INTO produto_producao
-                (IdProducao, IdProduto)
+            INSERT INTO product_production
+                (production_id, product_id)
             VALUES
                 ({self.production_id}, {product_id})
         ''')

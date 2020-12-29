@@ -18,7 +18,7 @@ def main():
     path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Templates")
     os.chdir(path)
 
-    ip_address_and_port = ("127.0.0.1", 21)
+    ip_address_and_port = ("localhost", 2121)
     authorizer = DummyAuthorizer()
     authorizer.add_user("admin", "admin", '.', perm='elradfmw')
 

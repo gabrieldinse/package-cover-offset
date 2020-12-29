@@ -11,6 +11,7 @@ from typing import Tuple
 
 # Third party modules
 import cv2
+import numpy as np
 
 # Local application imports
 from Miscellaneous.Errors import (VideoNotOpenedError, VideoNotInitializedError,
@@ -211,7 +212,7 @@ class SyncedVideoStream:
     def resolution(self) -> Tuple[int, int]:
         return self.stream.resolution
 
-    def create_frames_reader(self) -> FramesReader:
+    def create_frames_reader(self):
         frames_reader = FramesReader(self)
         self.frames_readers.append(frames_reader)
         return frames_reader
@@ -224,7 +225,7 @@ class FramesReader:
         self.running = False
         self.frame = None
 
-    def copy(self) -> FramesReader:
+    def copy(self):
         return self.video_stream.create_frames_reader()
 
     def read(self, timeout: float=1.0) -> np.ndarray:

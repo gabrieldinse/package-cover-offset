@@ -61,6 +61,7 @@ class VideoInfoExtractor:
         while self.running:
             try:
                 self.frame = self.frames_reader.read()
+                self.frame = cv2.imr
             except FrameReadingError:
                 pass
             else:

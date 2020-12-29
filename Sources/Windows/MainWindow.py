@@ -190,7 +190,7 @@ class MainWindow(QMainWindow):
                 self.update_product_types_list()
                 self.select_product_type(product_type_id)
 
-    def setup_vision_settings(self, product_name: str) -> None:
+    def setup_vision_settings(self, product_name: str) -> ProductType:
         segmentation_dialog = SegmentationSettings(
             product_name, self.camera.create_frames_reader())
         segmentation_dialog.exec()
@@ -209,7 +209,7 @@ class MainWindow(QMainWindow):
         return None
 
     def edit_vision_settings(self, product_name,
-                             segmentation_info: SegmentationInfo) -> None:
+                             segmentation_info: SegmentationInfo) -> ProductType:
         segmentation_dialog = EditSegmentationSettings(
             product_name, self.camera.create_frames_reader(), segmentation_info)
         segmentation_dialog.exec()
